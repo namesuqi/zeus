@@ -1,0 +1,104 @@
+*** Settings ***
+Library           ../../../lib/platform/datacollect/common_action/copy_file_to_local.py
+Library           ../../../lib/platform/datacollect/common_action/file_to_dictlist.py
+Library           ../../../lib/platform/datacollect/common_action/compare_file.py
+Library           ../../../lib/platform/datacollect/send_report.py
+Variables         ../../../lib/platform/datacollect/global_vars/sdk.py
+Variables         ../../../lib/platform/datacollect/global_vars/idc.py
+
+*** Test Cases ***
+idc_peer_connection_report
+    [Tags]    regression    abandon
+    Send Report    IdcPeerConnectionReport
+    sleep    3
+    Remote Copy File    ${idc_peer_connection_report['name']}
+    ${result}    Compare File By Its List    ${idc_peer_connection_report['name']}
+    Should Be True    ${result}
+
+sdk_live_delay_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkLiveDelayVersion1
+    sleep    3
+    Remote Copy File    ${sdk_live_delay_version_1['name']}
+    ${result}    Compare File By Contain Abtime List    ${sdk_live_delay_version_1['name']}
+    Should Be True    ${result}
+
+sdk_offering_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkOfferingVersion1
+    sleep    3
+    Remote Copy File    ${sdk_offering_version_1['name']}
+    ${result}    Compare File By Contain Type List    ${sdk_offering_version_1['name']}
+    Should Be True    ${result}
+
+sdk_push_state_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkPushStateVersion1
+    sleep    3
+    Remote Copy File    ${sdk_push_state_version_1['name']}
+    ${result}    Compare File By Contain Type List    ${sdk_push_state_version_1['name']}
+    Should Be True    ${result}
+
+sdk_qos_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkQosVersion1
+    sleep    3
+    Remote Copy File    ${sdk_qos_version_1['name']}
+    ${result}    Compare File By Contain Type List    ${sdk_qos_version_1['name']}
+    Should Be True    ${result}
+
+sdk_vf_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkVfVersion1
+    sleep    3
+    Remote Copy File    ${sdk_vf_version_1['name']}
+    ${result}    Compare File By Contain Duration List    ${sdk_vf_version_1['name']}
+    Should Be True    ${result}
+
+sdk_vv_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkVvVersion1
+    sleep    3
+    Remote Copy File    ${sdk_vv_version_1['name']}
+    ${result}    Compare File By Contain Type List    ${sdk_vv_version_1['name']}
+    Should Be True    ${result}
+
+sdk_fod_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkFodVersion1
+    sleep    3
+    Remote Copy File    ${sdk_fod_version_1['name']}
+    ${result}    Compare File By Contain Type List    ${sdk_fod_version_1['name']}
+    Should Be True    ${result}
+
+sdk_flow_download_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkFlowDownloadVersion1
+    sleep    3
+    Remote Copy File    ${sdk_flow_download_version_1['name']}
+    ${result}    Compare File By Contain Download List    ${sdk_flow_download_version_1['name']}
+    Should Be True    ${result}
+
+sdk_flow_upload_version_1
+    [Tags]    platform_collect_sdk    regression
+    Send Report    SdkFlowUploadVersion1
+    sleep    3
+    Remote Copy File    ${sdk_flow_upload_version_1['name']}
+    ${result}    Compare File By Contain Download List    ${sdk_flow_upload_version_1['name']}
+    Should Be True    ${result}
+
+sdk_exception_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkExceptionVersion1
+    sleep    5
+    Remote Copy File    ${sdk_exception_version_1['name']}
+    ${result}    Compare File By Exception List    ${sdk_exception_version_1['name']}
+    Should Be True    ${result}
+
+sdk_performance_vod_version_1
+    [Tags]    regression    abandon
+    Send Report    SdkPerformanceVodVersion1
+    sleep    3
+    Remote Copy File    ${sdk_performance_vod_version_1['name']}
+    ${result}    Compare File By Performance List    ${sdk_performance_vod_version_1['name']}
+    Should Be True    ${result}

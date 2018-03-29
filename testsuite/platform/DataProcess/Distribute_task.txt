@@ -1,0 +1,36 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_FileOnDemandCleaned_data
+    [Tags]    platform_test
+    createtabledata    FileOnDemandCleaned
+
+CurrentOnlineProvinceDistributeJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    16
+    @{varlist}    Create List    hour=true    time=16    export=true
+    createjobexpecteddata    ${CurrentOnlineProvinceDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentOnlineProvinceDistributeJob['mysqltable']}
+    startodpsjob    ${workpath}    ${CurrentOnlineProvinceDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${CurrentOnlineProvinceDistributeJob['name']}    select province, username, online_count, play_type from ${CurrentOnlineProvinceDistributeJob['mysqltable']}
+    Should Be True    ${re}
+
+CurrentOnlineISPDistributeJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task    distinct
+    ${var}    Convert to Integer    15
+    @{varlist}    Create List    hour=true    time=15    export=true
+    createjobexpecteddata    ${CurrentOnlineISPDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentOnlineISPDistributeJob['mysqltable']}
+    startodpsjob    ${workpath}    ${CurrentOnlineISPDistributeJob['name']}    ${varlist}
+    ${re}    compareresultlinenumbermysql    ${CurrentOnlineISPDistributeJob['name']}    select isp, username, online_count, play_type from ${CurrentOnlineISPDistributeJob['mysqltable']}
+    Should Be True    ${re}

@@ -1,0 +1,22 @@
+{
+    "type":"record",
+    "name":"download_flow",
+    "fields":[
+        {"name":"id","type":"string"},
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"play_type","type":["null","string"],"default":null},
+        {"name":"url","type":["null","string"],"default":null},
+        {"name":"file_id","type":["null","string"],"default":null},
+        {"name":"fsize","type":["null","long"],"default":null},
+        {"name":"user_agent","type":["null","string"],"default":null},
+        {"name":"duration","type":"long"},
+        {"name":"p2p_download","type":"long"},
+        {"name":"cdn_download","type":"long"},
+        {"name":"public_ip","type":"string"},
+        {"name":"country","type":["null","string"],"default":null},
+        {"name":"province_id","type":["null","string"],"default":null},
+        {"name":"city_id","type":["null","string"],"default":null},
+        {"name":"isp_id","type":["null","string"],"default":null}
+    ]
+}

@@ -1,0 +1,101 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+create_ok
+    [Documentation]    目标：验证能够在指定路径下新建文件
+    ...    参数：cwd，filename，size，md5，file_id，public("public"默认"yes")
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete Folder    ${ID_LEIGANG}    /new
+    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /    new
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /new
+    ...    ${NEW_FILE_NAME}    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    yes
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    Should Be Equal    @{FileInfo}[0]    ${NEW_FILE_ID}
+    Comment    IsPublic
+    Should Be Equal    @{FileInfo}[2]    1
+    Dir Delete Directory    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /new
+    [Teardown]    Run Keywords    Db Delete Folder    ${ID_LEIGANG}    /new    AND    Db Delete File By Md5
+    ...    ${NEW_FILE_MD5}
+
+invalid_current_folder
+    [Documentation]    目标：验证当前目录不存在时，返回E_DIRECTORY_NON_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /new
+    ...    ${NEW_FILE_NAME}    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    yes
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_DIRECTORY_NON_EXISTS
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+file_name_registered
+    [Documentation]    目标：验证新建文件已存在时，返回E_FOLDER_ALREADY_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /    ${NEW_FILE_NAME}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    yes
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    ${NEW_FILE_NAME}    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    yes
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FILE_ALREADY_EXISTS
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+invalid_file_name
+    [Documentation]    目标：验证新建文件名不合法时，返回E_INVALID_FOLDER_NAME
+    [Tags]    dir    regression    api
+    [Setup]
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    *    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    yes
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_FILE_NAME
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+no_file_id
+    [Documentation]    目标：验证参数缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    [Setup]
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    ${NEW_FILE_NAME}    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    \    yes
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+is_not_public
+    [Documentation]    目标：验证新建文件时可控制文件不公开，即public：no
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    ${NEW_FILE_NAME}    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    no
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    Should Be Equal    @{FileInfo}[0]    ${NEW_FILE_ID}
+    Comment    IsPublic
+    Should Be Equal    @{FileInfo}[2]    0
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+create_in_root_dir
+    [Documentation]    目标：验证能够在用户根目录下直接新建文件
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ${response}    Dir Create File By Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    ${NEW_FILE_NAME}    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    yes
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    Should Be Equal    @{FileInfo}[0]    ${NEW_FILE_ID}
+    Comment    IsPublic
+    Should Be Equal    @{FileInfo}[2]    1
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}

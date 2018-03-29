@@ -1,0 +1,15 @@
+{
+    "type":"record",
+    "name":"live_progress",
+    "fields":[
+        {"name":"peer_id","type":"string"},
+        {"name":"timestamp","type":"long"},
+        {"name":"public_ip","type":"string"},
+        {"name":"file_id","type":"string"},
+        {"name":"chunk_id","type":"long"},
+        {"name":"country","type":["null","string"],"default":null},
+        {"name":"province_id","type":["null","string"],"default":null},
+        {"name":"city_id","type":["null","string"],"default":null},
+        {"name":"isp_id","type":["null","string"],"default":null}
+    ]
+}

@@ -1,0 +1,21 @@
+*** Settings ***
+Default Tags
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/feature/live_push_perf/MockPushSession.py
+
+*** Test Cases ***
+push_seesion_req
+    [Documentation]    parameter: peer_nums for push_session
+    [Tags]    push_session_req    push_session
+    PushSessionReq    0.01    0    2000
+
+push_session_hib
+    [Tags]    push_session    push_session_hib
+    PushSessionHib    0.01    0    2000    2
+
+test
+    [Tags]    push_session_test    push_session
+    PushSessionReq    0    10
+    sleep    10
+    PushSessionHib    0    10    10

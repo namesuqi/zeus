@@ -1,0 +1,22 @@
+127.0.0.1 localhost
+127.0.1.1       localhost.localdomain   localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+
+#p2pserver
+10.5.0.13    analyst.cloutropy.com
+10.5.0.61    stats.cloutropy.com
+10.5.0.57    ts.cloutropy.com
+10.5.0.10    upgrade.cloutropy.com
+10.5.0.10    stun.cloutropy.com
+10.5.0.67    push.cloutropy.com
+#boss
+10.5.0.11    account.cloutropy.com
+10.5.0.12    ctrl.cloutropy.com
+10.5.0.11    dir.cloutropy.com
+10.5.0.12    upload.cloutropy.com
+10.5.0.11    vod.cloutropy.com

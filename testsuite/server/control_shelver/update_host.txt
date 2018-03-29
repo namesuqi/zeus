@@ -1,0 +1,418 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_shelver.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/mysql_db.py
+Library           ../../../lib/database/mysql_handler.py
+Variables         ../../../lib/interface/ops/control_constant.py
+
+*** Test Cases ***
+update location english
+    [Documentation]    验证：数据库中有该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_EN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_EN}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+update location num
+    [Documentation]    验证：数据库中有该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_NUM}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_NUM}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+update location underscode
+    [Documentation]    验证：数据库中有该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_UNDERSCODE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_UNDERSCODE}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+update location group
+    [Documentation]    验证：数据库中有该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_GROUP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_GROUP}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+add location english
+    [Documentation]    验证：数据库无该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    且请求的location参数为全英文，数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE3}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_EN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_EN}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+add location num
+    [Documentation]    验证：数据库无该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    且请求的location参数为全数字，数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE3}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_NUM}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_NUM}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+add location underscode
+    [Documentation]    验证：数据库无该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    且请求的location参数为下划线，数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE3}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_UNDERSCODE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_UNDERSCODE}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+add location group
+    [Documentation]    验证：数据库无该主机的location信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    且请求的location参数为英文数字下划线组合，数据库的location会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE3}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${LOCATION_KEY}
+    ...    ${LOCATION_VALUE_GROUP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${LOCATION_VALUE_GROUP}    @{host_info_value}[3]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+update comment english
+    [Documentation]    验证：数据库中有该主机的comment信息时，向服务器发送更新主机的comment信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_EN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_EN}    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+update comment num
+    [Documentation]    验证：数据库中有该主机的comment信息时，向服务器发送更新主机的comment信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_NUM}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_NUM}    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+update comment underscode
+    [Documentation]    验证：数据库中有该主机的comment信息时，向服务器发送更新主机的comment信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_UNDERSCODE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_UNDERSCODE}    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+update comment group
+    [Documentation]    验证：数据库中有该主机的comment信息时，向服务器发送更新主机的comment信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+    ...    AND    Db Insert Ops Host    ${HOST_ID1}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID1}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE1}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID1}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_GROUP
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID1}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_GROUP    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+add comment english
+    [Documentation]    验证：数据库无有该主机的comment信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE3}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_EN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_EN}    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+add comment num
+    [Documentation]    验证：数据库无有该主机的comment信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE3}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_NUM}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_NUM}    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+add comment underscode
+    [Documentation]    验证：数据库无有该主机的comment信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE3}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_UNDERSCODE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_UNDERSCODE}    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}
+
+add comment group
+    [Documentation]    验证：数据库无有该主机的comment信息时，向服务器发送更新主机的位置信息，
+    ...
+    ...    数据库的comment会被更新，并返回200和success
+    ...
+    ...    目前尚未对参数进行校验
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Insert Ops Host    ${HOST_ID3}    ${IP1}    ${STATUS_0}    AND
+    ...    Db Insert Ops Host Info    ${HOST_ID3}    ${HOSTNAME_VALUE}    ${COMMENT_VALUE3}    ${LOCATION_VALUE1}    ${CPU_VALUE}
+    ...    ${MEM_VALUE}    ${DISK_VALUE}    ${HOST_OS_VALUE}
+    ${response}    Update Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID3}    ${COMMENT_KEY}
+    ...    ${COMMENT_VALUE_GROUP
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_info_by_host_id    ${HOST_ID3}
+    log    ${host_info}
+    ${host_info_value}    Set Variable    @{host_info}[0]
+    log    ${host_info_value}
+    Should Be Equal    ${COMMENT_VALUE_GROUP    @{host_info_value}[2]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID3}    AND    Db Delete Ops Host    ${HOST_ID3}

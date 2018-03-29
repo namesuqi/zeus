@@ -1,0 +1,134 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/feature/lfstrategy/peer_data.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/feature/lfstrategy/CreatePeerData.py
+Library           ../../../lib/feature/lfstrategy/MockReport.py
+Library           ../../../lib/feature/lfstrategy/RangePeerInfo.py
+
+*** Test Cases ***
+lf a
+    [Documentation]    验证进行播放的peer数不大于3的时候，雷锋拉入和清退策略会使当前雷锋数维持在不小于10的状态
+    [Tags]    lf_test_a
+    ${r1}    InitPeerNum    0    1
+    sleep    10
+    ${r2}    SdkReport    0    1
+    sleep    200
+    ${r3}    InitPeerNum    1    3
+    sleep    10
+    ${r4}    SdkReport    0    3
+    sleep    200
+    ${r5}    SdkReport    0    3
+    sleep    200
+    ${r6}    SdkReport    0    3
+    sleep    200
+    ${r7}    SdkReport    0    2
+    sleep    200
+    ${r8}    SdkReport    0    2
+
+lf b
+    [Documentation]    验证播放的peer数在4-8变化时，雷锋策略能够有效拉入和清退
+    [Tags]    lf_test_b
+    ${r1}    InitPeerNum    0    4
+    sleep    10
+    ${r2}    SdkReport    0    4
+    sleep    200
+    ${r3}    SdkReport    0    4
+    sleep    200
+    ${r4}    SdkReport    0    4
+    sleep    200
+    ${r5}    InitPeerNum    4    8
+    sleep    10
+    ${r6}    SdkReport    0    8
+    sleep    200
+    ${r7}    SdkReport    0    8
+    sleep    200
+    ${r8}    SdkReport    0    8
+    sleep    200
+    ${r9}    SdkReport    0    8
+    sleep    200
+    ${r10}    SdkReport    0    4
+    sleep    200
+    ${r11}    SdkReport    0    4
+    sleep    200
+    ${r12}    SdkReport    0    4
+
+lf c
+    [Documentation]    验证播放的peer数在5-15变化时，雷锋策略能够有效拉入和清退
+    [Tags]    lf_test_c
+    ${r1}    InitPeerNum    0    5
+    sleep    10
+    ${r2}    SdkReport    0    5
+    sleep    200
+    ${r3}    SdkReport    0    5
+    sleep    200
+    ${r4}    SdkReport    0    5
+    sleep    200
+    ${r5}    SdkReport    0    5
+    sleep    200
+    ${r6}    InitPeerNum    5    10
+    sleep    10
+    ${r7}    SdkReport    0    10
+    sleep    200
+    ${r8}    SdkReport    0    10
+    sleep    200
+    ${r9}    SdkReport    0    10
+    sleep    200
+    ${r10}    SdkReport    0    5
+    sleep    200
+    ${r11}    SdkReport    0    5
+    sleep    200
+    ${r12}    SdkReport    0    5
+    sleep    200
+    ${r13}    SdkReport    0    5
+    sleep    480
+    ${r14}    InitPeerNum    0    15
+    sleep    10
+    ${r15}    SdkReport    0    15
+    sleep    200
+    ${r16}    SdkReport    0    15
+    sleep    200
+    ${r17}    SdkReport    0    15
+    sleep    200
+    ${r18}    SdkReport    0    15
+
+lf d
+    [Documentation]    验证seed数小于设定的seed最小值且s/p＜3时，会触发加推策略
+    [Tags]    lf_test_d
+    ${r1}    InitPeerNum    0    3
+    sleep    10
+    ${r2}    SdkReport    0    3
+    sleep    200
+    ${r3}    SdkReport    0    3
+    sleep    200
+    ${r4}    SdkReport    0    3
+    sleep    200
+
+lf e
+    [Documentation]    验证seed数小于设定的seed最小值且3＜s/p＜5时，会触发加推策略
+    [Tags]    lf_test_e
+    ${r1}    InitPeerNum    0    2
+    sleep    10
+    ${r2}    SdkReport    0    2
+    sleep    200
+    ${r3}    SdkReport    0    2
+    sleep    200
+    ${r4}    SdkReport    0    2
+    sleep    200
+
+lf f
+    [Documentation]    验证seed数小于设定的seed最小值且s/p＞5时，会触发加推策略
+    [Tags]    lf_test_f
+    ${r1}    InitPeerNum    0    1
+    sleep    10
+    ${r2}    SdkReport    0    1
+    sleep    200
+    ${r3}    SdkReport    0    1
+    sleep    200
+    ${r4}    SdkReport    0    1
+    sleep    200

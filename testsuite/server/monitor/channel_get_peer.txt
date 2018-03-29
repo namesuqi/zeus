@@ -1,0 +1,19 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/monitor_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+get_peer_OK
+    [Tags]    monitor
+    ${response}    Channel Get Peer    ${HTTP}    ${MONITOR_HOST}    ${MONITOR_PORT}    473F2DD6307695397D1B42A4D6574C4C    1478142720000
+    ...    1478142720010
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

@@ -1,0 +1,69 @@
+*** Settings ***
+Default Tags
+Library           ../../../lib/business/Api_Shata.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/response/VerifyResponse.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/api_shata.py
+
+*** Test Cases ***
+GetMinuteOK
+    [Documentation]    目标：验证当鉴权正确时能成功以key-value形式返回在指定时间范围内每5分钟粒度的峰值带宽
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    minute    ${TIME_START}
+    ...    ${TIME_END}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+GetHourOK
+    [Documentation]    目标：验证当鉴权正确时能成功以key-value形式返回在指定时间范围内每小时粒度的峰值带宽
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    hour    ${TIME_START}
+    ...    ${TIME_END}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+GetDailyOK
+    [Documentation]    目标：验证当鉴权正确时能成功以key-value形式返回在指定时间范围内每天粒度的峰值带宽
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    day    ${TIME_START}
+    ...    ${TIME_END}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+GetMonthOK
+    [Documentation]    目标：验证当鉴权正确时能成功以key-value形式返回在指定时间范围内每月粒度的峰值带宽
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    month    ${TIME_START}
+    ...    ${TIME_END}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+EndBeforeStart
+    [Documentation]    目标：验证当start小于end时查询结果为空
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    minute    ${TIME_END}
+    ...    ${TIME_START}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+InvalidStart
+    [Documentation]    目标：验证输入无效的start时返回404
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    month    ${INVALID_TIME}
+    ...    ${TIME_END}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    404
+    VerifyErrorCode    ${response}    None
+
+InvalidEnd
+    [Documentation]    目标：验证输入无效的end时返回404
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    month    ${TIME_START}
+    ...    ${INVALID_TIME}    ${ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    404
+    VerifyErrorCode    ${response}    None
+
+WrongToken
+    [Documentation]    目标：验证输入错误的鉴权时返回code=-1,message=not authorized.
+    ${response}    ApiBandwidth    ${HTTP}    ${API_HOST}    ${API_PORT}    minute    ${TIME_START}
+    ...    ${TIME_END}    ${WRONG_ACCESS}    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    -1
+    ShouldBeEqual    ${code}    ${expect_code}
+    ShouldBeEqual    ${message}    not authorized.

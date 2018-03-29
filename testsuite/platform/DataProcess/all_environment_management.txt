@@ -1,0 +1,27 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+prepare_case_environment
+    [Tags]    platform_testpre
+    ${result}    gitpullcode    ${folderpath}
+    Should Be True    ${result}
+    ${result}    mvnpackage    ${folderpath}
+    Should Be True    ${result}
+    ${result}    uploadjartoodps    ${folderpath}    ${commandpath}
+    Should Be True    ${result}
+
+create_all_data
+    [Tags]    platform_testpre
+    createalldata
+
+cleanalltxt
+    [Tags]    platform_testpre
+    cleardatafile    testdata
+    cleardatafile    inputdata
+    cleardatafile    outputdata

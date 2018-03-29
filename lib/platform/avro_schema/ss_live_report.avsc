@@ -1,0 +1,20 @@
+{
+    "type":"record",
+    "name":"ss_live_report",
+    "fields":[
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"version","type":"string"},
+        {"name":"country","type":"string"},
+        {"name":"province_id","type":"string"},
+        {"name":"city_id","type":"string"},
+        {"name":"isp_id","type":"string"},
+        {"name":"file_id","type":"string"},
+        {"name":"chunk_id","type":"long"},
+        {"name":"operation","type":"string"},
+        {"name":"cdn","type":"long"},
+        {"name":"p2p","type":"long"},
+        {"name":"p2penable","type":"boolean"},
+        {"name":"ssid","type":"string"}
+    ]
+}

@@ -1,0 +1,160 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/redis_cluster.py
+Library           ../../../lib/interface/cp/tracker_server.py
+
+*** Test Cases ***
+ts_cache_report_add_ok
+    [Documentation]    目标：验证已登录peer能成功汇报cache
+    ...    设计：op选择add的情况下汇报cache. Error返回无
+    ...    依赖：peer需要先登录成功 并且去redis数据库清空相关数据
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Cluster Delete Keys    FOSC_    ${LIVE_FILE_ID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${result}    Evaluate    int(${length})-1
+    Should Be Equal    ${length_setup}    ${result}
+    [Teardown]    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_DEL}
+
+ts_cache_report_del_ok
+    [Documentation]    目标：验证已登录peer能成功汇报cache
+    ...    设计：op选择del的情况下汇报cache. Error返回无
+    ...    依赖：peer需要先登录成功 且redis数据库中有FILE_ID的key存在；
+    ...    注：本用例应在“ts_cache_report_add_ok”成功后执行
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}
+    ...    ${LIVE_FILE_ID}    ${CPPC}    ${OP_ADD}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_DEL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${result}    Evaluate    int(${length})+1
+    Should Be Equal    ${length_setup}    ${result}
+
+ts_cache_report_not_login_peer_id
+    [Documentation]    目标：验证使用未登录的peer_id进行cache汇报 返回E_TS_NOT_LOGIN
+    ...    依赖：确保peer未登录
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Logout    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    AND    Cluster Delete Keys    FOSC_    ${LIVE_FILE_ID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_TS_NOT_LOGIN
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    Should Be Equal    ${length}    ${length_setup}
+
+ts_cache_report_invalid_peer_id
+    [Documentation]    目标：验证使用无效的peer_id进行cache汇报 返回400
+    ...    依赖：peer非法
+    [Tags]    report_old    regression
+    [Setup]    Cluster Delete Keys    FOSC_    ${LIVE_FILE_ID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID_INVALID}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    Should Be Equal    ${length}    ${length_setup}
+
+ts_cache_report_invalid_file_id
+    [Documentation]    目标：验证使用无效的file_id进行cache汇报时，返回400
+    ...    设计：file_id有误
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Cluster Delete Keys    FOSC_    ${FILE_ID_INVALID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${FILE_ID_INVALID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${FILE_ID_INVALID}
+    ...    ${CPPC}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${FILE_ID_INVALID}    _    ${ISP_100017}    }
+    Should Be Equal    ${length}    ${length_setup}
+
+ts_cache_report_invalid_operation
+    [Documentation]    目标：验证使用无效的operation进行cache汇报时，返回400
+    ...    设计：op无效 返回400
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Cluster Delete Keys    FOSC_    ${LIVE_FILE_ID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    Should Be Equal    ${length}    ${length_setup}
+
+ts_cache_report_invalid_cppc_parameter
+    [Documentation]    目标：验证使用无效的cppc参数进行汇报时，返回400
+    ...    设计：无效的cppc
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Cluster Delete Keys    FOSC_    ${LIVE_FILE_ID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC_INVALID}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    Should Be Equal    ${length}    ${length_setup}
+
+ts_cache_report_no_file_id
+    [Documentation]    目标：验证必选参数file_id缺失时进行cache汇报时，返回400
+    ...    设计：file_id缺失
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Cluster Delete Keys    FOSC_
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${EMPTY}
+    ...    ${CPPC}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    Should Be Equal    ${length}    ${length_setup}
+
+ts_cache_report_no_operation
+    [Documentation]    目标：验证必选参数op缺失时可成功汇报cache_report
+    [Tags]    report_old    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Cluster Delete Keys    FOSC_    ${LIVE_FILE_ID}
+    ${length_setup}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${response}    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${length}    Cluster Card Key    {FOSC_    ${LIVE_FILE_ID}    _    ${ISP_100017}    }
+    ${result}    Evaluate    int(${length})-1
+    Should Be Equal    ${length_setup}    ${result}
+    [Teardown]    Peer Cache Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CPPC}    ${OP_DEL}

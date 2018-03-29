@@ -1,0 +1,79 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+create_ok
+    [Documentation]    目标：验证能在指定路径下新建目录
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    new
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${exists}    Db Is Folder Exists    ${ID_LEIGANG}    /new
+    Should Be True    ${exists}
+    [Teardown]    Db Delete Folder    ${ID_LEIGANG}    /new
+
+no_current_folder
+    [Documentation]    目标：验证不输入当前目录名时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    ${EMPTY}
+    ...    new
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    [Teardown]    Db Delete Folder    ${ID_LEIGANG}    /new
+
+no_new_folder
+    [Documentation]    目标：验证不输入新建目录名时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    [Teardown]    Db Delete Folder    ${ID_LEIGANG}    /new
+
+invalid_current_folder
+    [Documentation]    目标：验证当前目录不存在时，返回E_DIRECTORY_NON_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Run Keywords    Db Delete Folder    ${ID_LEIGANG}    /invalid    AND    Db Delete Folder
+    ...    ${ID_LEIGANG}    /invalid/new
+    ${response}    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /invalid
+    ...    new
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_DIRECTORY_NON_EXISTS
+    ${exists}    Db Is Folder Exists    ${ID_LEIGANG}    /invalid/new
+    Should Not Be True    ${exists}
+    [Teardown]    Run Keywords    Db Delete Folder    ${ID_LEIGANG}    /invalid/new    AND    Db Delete Folder
+    ...    ${ID_LEIGANG}    /invalid
+
+invalid_new_folder
+    [Documentation]    目标：验证新建目录名不合法时，返回E_INVALID_FOLDER_NAME
+    [Tags]    dir    regression    api
+    ${response}    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    *new
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_FOLDER_NAME
+    ${exists}    Db Is Folder Exists    ${ID_LEIGANG}    /*new
+    Should Not Be True    ${exists}
+
+new_folder_created
+    [Documentation]    目标：验证新建目录名已存在时，返回E_FOLDER_ALREADY_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Run Keywords    Db Delete Folder    ${ID_LEIGANG}    /new    AND    DbCreateFolder
+    ...    ${ID_LEIGANG}    /new
+    ${response}    Dir Create Folder    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    /
+    ...    new
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FOLDER_ALREADY_EXISTS
+    [Teardown]    Db Delete Folder    ${ID_LEIGANG}    /new

@@ -1,0 +1,25 @@
+*** Settings ***
+Library           ../../../lib/special/ue/collect_result.py
+Library           Collections
+Variables         ../../../lib/special/ue/const.py
+
+*** Test Cases ***
+collect_results_files
+    [Documentation]
+    [Tags]    user_exp
+    Collect Results Files
+
+back_up_logs
+    [Documentation]
+    [Tags]    user_exp
+    Back Up Logs
+
+collect_database_results
+    [Documentation]
+    [Tags]    user_exp
+    Write Database Csv
+
+collect_http_db_results
+    [Documentation]
+    [Tags]    user_exp
+    Write Http Database Csv

@@ -1,0 +1,87 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_deploy.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+
+*** Test Cases ***
+server_add_one_ok
+    [Documentation]    为已分配的主机部署对应的服务
+    [Tags]    add one ok
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${ADD}    ${HOST_ID4}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_add_two_ok
+    [Tags]    add two ok
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${ADD}    ${HOSTS}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_add_no_host
+    [Documentation]    不存在该主机（部署单个主机的情况）
+    [Tags]    add no host
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${ADD}    ${HOST_NO}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_add_no_hosts
+    [Documentation]    不存在该主机（部署多个主机的情况）
+    [Tags]    add no hosts
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${ADD}    ${HOSTS_NO}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_update_one_ok
+    [Documentation]    更新某主机的服务版本
+    [Tags]    update one ok
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${UPDATE}    ${HOST_ID4}
+    ...    ${STUN_GO}    ${VERSION2}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_update_two_ok
+    [Documentation]    更新多个主机的服务版本
+    [Tags]    update two ok
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${UPDATE}    ${HOSTS}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_update_no_host
+    [Documentation]    不存在该主机（更新单个服务）
+    [Tags]    update no host
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${UPDATE}    ${HOST_NO}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+server_update_no_hosts
+    [Documentation]    不存在该主机（更新多台主机服务）
+    [Tags]    update no hosts
+    ${response}    Server Ctrl    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${UPDATE}    ${HOSTS_NO}
+    ...    ${STUN_GO}    ${VERSION1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}

@@ -1,0 +1,26 @@
+*** Settings ***
+Variables         ../../../lib/constant/deploy.py
+Library           ../../../lib/business/Deploy.py
+
+*** Test Cases ***
+DeployUbuntu
+    [Documentation]
+    [Tags]    start_deploy_ubuntu
+    InitNodeDeploy    2
+    UpdateAptget
+    InstallVlcOnUbuntu
+    InstallHtopOnUbuntu
+    InstallIftopOnUbuntu
+    AddAdminOnUbuntu
+
+DeployHosts
+    [Documentation]
+    [Tags]    deploy_ubuntu_hosts
+    InitNodeDeploy    1
+    AppendHosts    10.0.0.0    auto.cloutropy.com
+
+
+
+
+
+

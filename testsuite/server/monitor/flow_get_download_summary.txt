@@ -1,0 +1,18 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/monitor_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+flow_get_download_summary_OK
+    [Tags]    monitor
+    ${response}    Flow Get Download Summary    ${HTTP}    ${MONITOR_HOST}    ${MONITOR_PORT}    all    all
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

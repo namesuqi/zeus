@@ -1,0 +1,84 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_DownloadFlowCleaned_data
+    [Tags]    platform_test
+    createtabledata    DownloadFlowCleaned
+
+FiveMinuteBandWidthJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    ${4}    Convert to Integer    4
+    @{var0}    Create List    ${2}    ${3}    ${4}
+    ${var1}    Convert to Number    0.1
+    ${var}    Convert to Integer    22
+    @{varlist}    Create List    export=true    hour=true    time=22
+    createjobexpecteddata    ${FiveMinuteBandWidthJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    dropodpsdata    ${PeakBandWidthMiddleTableJob['outputtable']}
+    operatemysqldata    delete from ${FiveMinuteBandWidthJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${FiveMinuteBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultabspatternlistmysql    ${FiveMinuteBandWidthJob['name']}    select timestamp, username, total_bandwidth, p2p_bandwidth, cdn_bandwidth, play_type from ${FiveMinuteBandWidthJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+HourPeakBandWidthJob_task
+    [Documentation]    follow the job FiveMinuteBandWidth
+    [Tags]    accuracy    platform_task
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    ${4}    Convert to Integer    4
+    @{var0}    Create List    ${2}    ${3}    ${4}
+    @{var1}    Create List    ${3}    ${3}    ${3}
+    ${var}    Convert to Integer    22
+    @{varlist}    Create List    export=true    hour=true    time=22
+    createjobexpecteddata    ${HourPeakBandWidthJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    dropodpsdata    ${HourPeakBandWidthJob['name']}
+    operatemysqldata    delete from ${HourPeakBandWidthJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${HourPeakBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultpatternlistmysql    ${HourPeakBandWidthJob['name']}    select timestamp, username, total_bandwidth, cdn_bandwidth, p2p_bandwidth, play_type from ${HourPeakBandWidthJob['mysqltable']} where date_time=${recorddate}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+
+DailyPeakBandWidthJob_task
+    [Documentation]    follow the job FiveMinuteBandWidth
+    [Tags]    platform_task    accuracy
+    ${1}    Convert to Integer    1
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    @{var0}    Create List    ${1}    ${2}    ${3}
+    @{var1}    Create List    ${3}    ${3}    ${3}
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailyPeakBandWidthJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    dropodpsdata    ${PeakBandWidthMiddleTableJob['outputtable']}
+    operatemysqldata    delete from ${DailyPeakBandWidthJob['mysqltable']} where date_time=${recorddate}
+    : FOR    ${i}    IN RANGE    24
+    \    @{varlist1}    Create List    export=true    hour=true    time=${i}
+    \    startodpsjob    ${workpath}    ${FiveMinuteBandWidthJob['name']}    ${varlist1}
+    startodpsjob    ${workpath}    ${DailyPeakBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultpatternlistmysql    ${DailyPeakBandWidthJob['name']}    select username, total_bandwidth, cdn_bandwidth, p2p_bandwidth, play_type from ${DailyPeakBandWidthJob['mysqltable']} where date_time=${recorddate}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+
+MonthlyPeakBandWidthJob_task
+    [Documentation]    follow the job DailyPeakBandWidth
+    [Tags]    platform_task    accuracy
+    ${1}    Convert to Integer    1
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    @{var0}    Create List    ${1}    ${2}    ${3}
+    @{var1}    Create List    ${3}    ${3}    ${3}
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    perpareconfig    ${workpath}    ${configpath}
+    createjobexpecteddata    ${MonthlyPeakBandWidthJob['name']}
+    operatemysqldata    delete from ${MonthlyPeakBandWidthJob['mysqltable']} where month=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyPeakBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultpatternlistmysql    ${MonthlyPeakBandWidthJob['name']}    select username, total_bandwidth, cdn_bandwidth, p2p_bandwidth, play_type from ${MonthlyPeakBandWidthJob['mysqltable']} where month=${recordmonth}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}

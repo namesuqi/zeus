@@ -1,0 +1,61 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_PeerInfoCleaned_data
+    [Tags]    platform_test
+    createtabledata    PeerInfoCleaned
+
+ISPProvinceParseJob_task
+    [Documentation]    prerequisite: PeerInfoCleaned_data created
+    [Tags]    platform_task    distinct
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${ISPProvinceParseJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${ISPProvinceParseJob['mysqltable']}
+    startodpsjob    ${workpath}    ${ISPProvinceParseJob['name']}    ${varlist}
+    downloaddatafromodps    ${ISPProvinceParseJob['outputtable']}    /outputdata/${ISPProvinceParseJob['name']}ODPS.txt
+    ${re}    compareresultodps    ${ISPProvinceParseJob['name']}
+    Should Be True    ${re}
+    ${re}    compareresultlinenumbermysql    ${ISPProvinceParseJob['name']}    select yunshang_core, ip, mac, os_version, cpu, province, isp_id, os_type from ${ISPProvinceParseJob['mysqltable']}
+    Should Be True    ${re}
+
+PeerInfoRecordingJob_task
+    [Documentation]    follow the job ISPProvinceParse
+    [Tags]    odps    platform_task
+    createjobexpecteddata    ${PeerInfoRecordingJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${PeerInfoRecordingJob['name']}
+    downloaddatafromodps    ${PeerInfoRecordingJob['outputtable']}    /outputdata/${PeerInfoRecordingJob['name']}DB.txt
+    ${re}    compareresult    ${PeerInfoRecordingJob['name']}
+    Should Be True    ${re}
+
+TotalPeerCountJob_task
+    [Documentation]    follow the job PeerInfoRecording
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${TotalPeerCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TotalPeerCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${TotalPeerCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${TotalPeerCountJob['name']}    select peer_prefix, total_count, play_type from ${TotalPeerCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+AllPeerISPProvinceDistributeJob_task
+    [Documentation]    prerequisite: PeerInfoCleaned_data created and the output will add into the input
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${AllPeerISPProvinceDistributeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${AllPeerISPProvinceDistributeJob['mysqltable1']}
+    operatemysqldata    delete from ${AllPeerISPProvinceDistributeJob['mysqltable2']}
+    startodpsjob    ${workpath}    ${AllPeerISPProvinceDistributeJob['name']}    ${varlist}
+    ${re0}    compareresultmysql    ${AllPeerISPProvinceDistributeJob['aliasname1']}    select username, isp, total_count \ from ${AllPeerISPProvinceDistributeJob['mysqltable1']}
+    Should Be True    ${re0}
+    ${re1}    compareresultmysql    ${AllPeerISPProvinceDistributeJob['aliasname2']}    select username, province, total_count \ from ${AllPeerISPProvinceDistributeJob['mysqltable2']}
+    Should Be True    ${re1}

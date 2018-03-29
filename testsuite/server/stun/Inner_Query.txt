@@ -1,0 +1,64 @@
+*** Settings ***
+Library           ../../../lib/interface/stun_udp_data.py
+Library           ../../../lib/interface/stun_udp_req.py
+Library           ../../../lib/interface/cp/stun_server.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Variables         ../../../lib/interface/cp/stun_constant.py
+
+*** Test Cases ***
+query_info_exist
+    [Documentation]    目标:stun内部存在节点信息时，可以查询该节点信息
+    [Tags]    query_exist
+    [Setup]    Sdk Nat Update Req    ${STUN_UDP_HOST_M}    ${STUN_UDP_PORT_M}    ${PEER_ID_M}    ${NAT_TYPE_M}    ${PRI_IP_M}
+    ...    ${PRI_PORT_M}    ${LISTENING_PORT}    ${UDP_CHECK}
+    ${response}    Stun Inner Query Peer    ${PROTOCOL_M}    ${HOST_M}    ${PORT_M}    ${PEER_ID_M }
+    status_code_should_be_equal    ${response}    200
+    ${PEER_ID_MT}    Get Field Value    ${response}    peer_id
+    ${NAT_TYPE_MT}    Get Field Value    ${response}    nat_type
+    ${PRIVATE_IP_MT}    Get Field Value    ${response}    private_ip
+    ${PRIVATE_PORT_MT}    Get Field Value    ${response}    private_port
+    Should Be Equal    ${PEER_ID_MT}    ${PEER_ID_M}
+    Should Be Equal    ${NAT_TYPE_MT}    ${NAT_TYPE_M}
+    Should Be Equal    ${PRIVATE_IP_MT}    ${PRI_IP_M}
+    Should Be Equal    ${PRIVATE_PORT_MT}    ${PRI_PORT_M}
+
+query_info_missing
+    [Documentation]    目标：查询stun内不存在的节点信息，返回200及对应的错误信息
+    [Tags]    query_missing
+    [Setup]    Sdk Nat Quit    ${STUN_UDP_HOST_M}    ${STUN_UDP_PORT_M}    ${PEER_ID_M}    ${PRI_PORT_M}    ${UDP_CHECK}
+    ${response}    Stun Inner Query Peer    ${PROTOCOL_M}    ${HOST_M}    ${PORT_M}    ${PEER_ID_M}
+    status_code_should_be_equal    ${response}    200
+    ${ERROR_INFO}    Get Field Value    ${response}    error
+    Should Be Equal    ${ERROR_INFO}    E_NON_EXISTS
+
+query_pid_short
+    [Documentation]    目标：查询节点信息语句中peer_id少于32位，返回错误码400
+    ...
+    [Tags]    pid_short
+    ${response}    Stun Inner Query Peer    ${PROTOCOL_M}    ${HOST_M}    ${PORT_M}    ${PEER_ID_SHORT}
+    status_code_should_be_equal    ${response}    400
+
+query_pid_long
+    [Documentation]    目标：查询节点信息语句中peer_id大于32位，返回200和对应的错误信息
+    ...
+    ...
+    [Tags]    pid_long
+    ${response}    Stun Inner Query Peer    ${PROTOCOL_M}    ${HOST_M}    ${PORT_M}    ${PEER_ID_LONG}
+    status_code_should_be_equal    ${response}    200
+    ${ERROR_INFO}    Get Field Value    ${response}    error
+    Should Be Equal    ${ERROR_INFO}    E_NON_EXISTS
+
+query_pid_invaild
+    [Documentation]    目标：查询节点信息语句中peer_id使用非16进制数，返回错误码400
+    ...
+    [Tags]    pid_invalid
+    ${response}    Stun Inner Query Peer    ${PROTOCOL_M}    ${HOST_M}    ${PORT_M}    ${PEER_ID_INVALID}
+    status_code_should_be_equal    ${response}    400
+
+query_count
+    [Documentation]    目标：查询stun内部节点数量
+    [Tags]    query_count
+    ${response}    Stun Inner Query Count     ${PROTOCOL_M}    ${HOST_M}    ${PORT_M}
+    status_code_should_be_equal     ${response}    200
+    field_should_be_exist    ${response}    ${COUNT_M}

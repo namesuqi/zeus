@@ -1,0 +1,3 @@
+login接口测试 http://127.0.0.1:32719/dashboard/login
+
+sshpass -p "yzhxc9!" ssh -o StrictHostKeyChecking=no admin@10.5.0.61 ls

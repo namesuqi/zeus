@@ -1,0 +1,110 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_shelver.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Variables         ../../../lib/interface/ops/control_constant.py
+Library           ../../../lib/database/mysql_db.py
+Library           ../../../lib/database/mysql_handler.py
+
+*** Test Cases ***
+post ok
+    [Documentation]    验证：数据库中无该主机时，shelver收到agent汇报的主机信息并将该主机信息写入数据库，并返回200和success
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID4}    AND    Db Delete Ops Host    ${HOST_ID4}
+    ${response}    Agent Post Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID4}    ${HOST_OS_VALUE}
+    ...    ${HOST_IP_3_VALUE}    ${HOSTNAME_VALUE}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE}    ${STEP}
+    ...    ${TIMESTAMP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_by_host_id    ${HOST_ID4}
+    log    ${host_info}
+    ${host_info_value1}    Set Variable    @{host_info}[0]
+    Should Be Equal    ${HOST_ID4}    @{host_info_value1}[0]
+    ${host_info_2}    db_get_ops_host_info_by_host_id    ${HOST_ID4}
+    log    ${host_info_2}
+    ${host_info_value2}    Set Variable    @{host_info_2}[0]
+    Should Be Equal    ${HOST_ID4}    @{host_info_value2}[0]
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID4}    AND    Db Delete Ops Host    ${HOST_ID4}
+
+post host not exist
+    [Documentation]    验证：主机为空时，shelver收到agent汇报的主机信息并汇报给control服务器，
+    ...
+    ...    并返回200和错误信息：Empty hostid
+    ...
+    ...
+    ...
+    ...
+    [Tags]    control shelver
+    [Setup]
+    ${response}    Agent Post Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID_NOT_EXIST}    ${HOST_OS_VALUE}
+    ...    ${HOST_IP_3_VALUE}    ${HOSTNAME_VALUE}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE}    ${STEP}
+    ...    ${TIMESTAMP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    Empty hostid
+
+post host invalid
+    [Documentation]    验证：主机不存在时，shelver收到agent汇报的主机信息并汇报给control服务器
+    ...
+    ...    并返回200和错误信息：invalid hostid
+    ...
+    [Tags]    control shelver
+    ${response}    Agent Post Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID_INVALID}    ${HOST_OS_VALUE}
+    ...    ${HOST_IP_3_VALUE}    ${HOSTNAME_VALUE}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE}    ${STEP}
+    ...    ${TIMESTAMP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    invalid hostid
+
+post host_os invalid
+    [Documentation]    目前尚未对参数进行校验
+    [Tags]    control shelver
+    ${response}    Agent Post Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID_3}    ${HOST_OS_INVALID}
+    ...    ${HOST_IP_3_VALUE}    ${HOSTNAME_VALUE}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE}    ${STEP}
+    ...    ${TIMESTAMP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+post update
+    [Documentation]    验证：数据库中有该主机信息时，shelver收到agent汇报的主机信息并在数据库中更新该主机信息，并返回200和success
+    [Tags]    control shelver
+    [Setup]
+    ${response}    Agent Post Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID4}    ${HOST_OS_VALUE}
+    ...    ${HOST_IP_3_VALUE}    ${HOSTNAME_VALUE2}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE}    ${STEP}
+    ...    ${TIMESTAMP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_info}    db_get_ops_host_by_host_id    ${HOST_ID4}
+    log    ${host_info}
+    ${host_info_value1}    Set Variable    @{host_info}[0]
+    Should Be Equal    ${HOST_ID4}    @{host_info_value1}[0]
+    ${host_info_2}    db_get_ops_host_info_by_host_id    ${HOST_ID4}
+    log    ${host_info_2}
+    ${host_info_value2}    Set Variable    @{host_info_2}[0]
+    Should Be Equal    ${HOSTNAME_VALUE2}    @{host_info_value2}[1]
+    ${response}    Agent Post Host    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}    ${HOST_ID4}    ${HOST_OS_VALUE}
+    ...    ${HOST_IP_3_VALUE}    ${HOSTNAME_VALUE3}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE}    ${STEP}
+    ...    ${TIMESTAMP}
+    ${host_info_3}    db_get_ops_host_info_by_host_id    ${HOST_ID4}
+    log    ${host_info_3}
+    ${host_info_value3}    Set Variable    @{host_info_3}[0]
+    Should Be Equal    ${HOSTNAME_VALUE3}    @{host_info_value3}[1]
+    [Teardown]

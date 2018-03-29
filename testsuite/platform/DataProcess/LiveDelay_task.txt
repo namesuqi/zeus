@@ -1,0 +1,25 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+
+*** Test Cases ***
+create_RawLiveDelay_data
+    [Tags]    platform_test    raw
+    createtabledata    RawLiveDelay
+
+FiveMinuteAverageLiveDelayJob_task
+    [Documentation]    prerequisite: LiveDelay_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    19
+    @{varlist}    Create List    hour=true    time=19    export=true
+    createjobexpecteddata    ${FiveMinuteAverageLiveDelayJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${FiveMinuteAverageLiveDelayJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${FiveMinuteAverageLiveDelayJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${FiveMinuteAverageLiveDelayJob['name']}    select username, five_minute_index, average_delay from ${FiveMinuteAverageLiveDelayJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}

@@ -1,0 +1,124 @@
+*** Settings ***
+Default Tags
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/live_push_agent/live_push_agent.py
+Variables         ../../../lib/interface/live_push_agent/const.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+FileURL_Num
+    [Documentation]    目标：验证FileURL是数字类型，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    100    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+FileURL_Wrong
+    [Documentation]    目标：验证FileURL格式不正确，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_WRONG}    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+FileURL_Missing
+    [Documentation]    目标：验证FileURL字段丢失，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_MISSING}    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+FileURL_Empty
+    [Documentation]    目标：验证FileURL字段为空，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_EMPTY}    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+FileURL_Not_Exist
+    [Documentation]    目标：验证FileURL字段丢失，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_NOT_EXIST}    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+
+FileURL_Correct
+    [Documentation]    目标：验证FileURL正确，期望返回200
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_String
+    [Documentation]    目标：验证Timeout是字符串，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    ${TIMEOUT_STRING}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_Missing
+    [Documentation]    目标：验证Timeout缺失，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_Empty
+    [Documentation]    目标：验证Timeout为空，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    ${TIMEOUT_EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_-1
+    [Documentation]    目标：验证Timeout为-1，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    -1
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_2
+    [Documentation]    目标：验证Timeout为2，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    2
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_3
+    [Documentation]    目标：验证Timeout为3，期望返回200
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    3
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_10
+    [Documentation]    目标：验证Timeout为10，期望返回200
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    10
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_10.5
+    [Documentation]    目标：验证Timeout是小数，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    10.5
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_15
+    [Documentation]    目标：验证Timeout是15，期望返回200
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    15
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_16
+    [Documentation]    目标：验证Timeout是16，期望返回400 目标：验证Timeout是255，期望返回400
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    16
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}
+
+Timeout_255
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT}    255
+    Status Code Should Be Equal    ${response}    400
+    ${response_body}    Get Response Data    ${response}

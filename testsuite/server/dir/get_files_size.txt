@@ -1,0 +1,77 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+get_one_ok
+    [Documentation]    目标：验证能获得一个文件id对应的file size
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Files Size    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${FILE_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${fsize}    Get Field Value    ${response}    @{FILE_ID1}[0]
+    @{file_info}    Db Get Info By Fid    @{FILE_ID1}[0]
+    Should Be Equal    ${fsize}    @{file_info}[0]
+
+get_files_ok
+    [Documentation]    目标：验证能够同时获得多个文件id对应的file size
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Files Size    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${FILE_IDS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file1_size}    Get Field Value    ${response}    @{FILE_IDS}[0]
+    @{file1_info}    Db Get Info By Fid    @{FILE_IDS}[0]
+    Should Be Equal    ${file1_size}    @{file1_info}[0]
+    ${file2_size}    Get Field Value    ${response}    @{FILE_IDS}[1]
+    @{file2_info}    Db Get Info By Fid    @{FILE_IDS}[1]
+    Should Be Equal    ${file2_size}    @{file2_info}[0]
+    ${file3_size}    Get Field Value    ${response}    @{FILE_IDS}[2]
+    @{file3_info}    Db Get Info By Fid    @{FILE_IDS}[2]
+    Should Be Equal    ${file3_size}    @{file3_info}[0]
+
+no_file_id
+    [Documentation]    目标：验证参数（file_ids）缺失时，返回400
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Files Size    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+invalid_file_ids
+    [Documentation]    目标：验证fileid列表中含不合法id（例0000*）时，不影响获取其它file_id对应文件的file size，返回信息只返回file_id存在的文件大小
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Files Size    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${INVALID_FILE_IDS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file1_size}    Get Field Value    ${response}    @{INVALID_FILE_IDS}[0]
+    Should Be Equal As Strings    ${file1_size}    None
+    ${file2_size}    Get Field Value    ${response}    @{INVALID_FILE_IDS}[1]
+    @{file2_info}    Db Get Info By Fid    @{INVALID_FILE_IDS}[1]
+    Should Be Equal    ${file2_size}    @{file2_info}[0]
+    ${file3_size}    Get Field Value    ${response}    @{INVALID_FILE_IDS}[2]
+    Should Be Equal As Strings    ${file1_size}    None
+
+incorrect_file_ids
+    [Documentation]    目标：验证file id列表中含有不存在的file_id（例00000000000000000000000000000000），返回信息只返回file_id存在的文件大小
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Files Size    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${INCORRECT_FILE_IDS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file1_size}    Get Field Value    ${response}    @{INCORRECT_FILE_IDS}[0]
+    @{file1_info}    Db Get Info By Fid    @{INCORRECT_FILE_IDS}[0]
+    Should Be Equal    ${file1_size}    @{file1_info}[0]
+    ${file2_size}    Get Field Value    ${response}    @{INCORRECT_FILE_IDS}[1]
+    Should Be Equal As Strings    ${file2_size}    None
+    ${file2_info}    Db Get Info By Fid    @{INCORRECT_FILE_IDS}[1]
+    Should Be Empty    ${file2_info}
+    ${file3_size}    Get Field Value    ${response}    @{INCORRECT_FILE_IDS}[2]
+    @{file3_info}    Db Get Info By Fid    @{INCORRECT_FILE_IDS}[2]
+    Should Be Equal    ${file3_size}    @{file3_info}[0]

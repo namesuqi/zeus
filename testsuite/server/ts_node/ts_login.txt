@@ -1,0 +1,201 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+ts_login_ok
+    [Documentation]    目标：验证peer(sdk version≥3.9.0)能成功login
+    ...
+    ...    说明：peer_id, version, nat_type, public_ip, public_port, private_ip, private_port, stunIP为必选参数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}
+
+ts_login_ok_macs
+    [Documentation]    目标：验证peer(sdk version≥3.9.0)能成功login
+    ...
+    ...    说明：peer_id, version, nat_type, public_ip, public_port, private_ip, private_port, stunIP为必选参数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ...    macs=tset_macs123123123{}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}
+
+ts_login_ok_device_info
+    [Documentation]    目标：验证peer(sdk version≥3.9.0)能成功login
+    ...
+    ...    说明：peer_id, version, nat_type, public_ip, public_port, private_ip, private_port, stunIP为必选参数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ...    device_info=test_device_info123123123{}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}
+
+ts_login_ok_full
+    [Documentation]    目标：验证peer(sdk version≥3.9.0)能成功login
+    ...
+    ...    说明：peer_id, version, nat_type, public_ip, public_port, private_ip, private_port, stunIP为必选参数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ...    macs=tset_macs123123123{}    device_info=test_device_info123123123{}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}
+
+ts_login_low_version
+    [Documentation]    目标：验证使用服务器不支持的低version(0.1.3)进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION_LOW}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_invalid_version
+    [Documentation]    目标：验证使用无效的version进行login时，返回400
+    ...
+    ...    version使用数字和小数点表示，例如1.0.2
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION_INVALID}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_invalid_nat_type
+    [Documentation]    目标：验证使用无效的NatType进行login时，返回400
+    ...
+    ...    NatType的有效值为0-6的正整数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    7    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_invalid_peer_id
+    [Documentation]    目标：验证使用无效的peer_id进行login时，返回400
+    ...
+    ...    peer_id是128位UUID，使用HEX编码
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID_INVALID}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_version
+    [Documentation]    目标：验证当必选参数version缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${EMPTY}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_nat_type
+    [Documentation]    目标：验证当必选参数NatType缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    \    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_public_ip
+    [Documentation]    目标：验证当必选参数PuiblicIP缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    \    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_public_port
+    [Documentation]    目标：验证当必选参数PublicPort缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    \    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_private_ip
+    [Documentation]    目标：验证当必选参数PrivateIP缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    \    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_private_port
+    [Documentation]    目标：验证当必选参数PrivatePort缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_login_no_stun_ip
+    [Documentation]    目标：验证当必选参数stunIP缺失时进行login时，返回400
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_sdk3.6_login_with_stun_ip
+    [Documentation]    目标：验证ts服务器可以拒绝低版本（目前仅支持version≥3.9.0）登录，3.6.0版本的peer携带stunIP不能成功login，
+    ...
+    ...    说明：peer_id, version, nat_type, public_ip, public_port, private_ip, private_port为必选参数；SDK版本≥3.6.0时，stunIP为必选参数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION_3_6}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}
+
+ts_sdk3.5_login_without_stun_ip
+    [Documentation]    目标：验证3.6.0版本的peer登录时缺失stunIP参数，ts返回400
+    ...
+    ...    说明：peer_id, version, nat_type, public_ip, public_port, private_ip, private_port为必选参数；SDK版本≥3.6.0时，stunIP为必选参数
+    [Tags]    ts_node    regression
+    ${response}    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION_3_5}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}

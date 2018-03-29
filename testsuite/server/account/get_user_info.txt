@@ -1,0 +1,56 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/account_server.py
+Library           ../../../lib/database/MysqlHandler.py
+
+*** Test Cases ***
+session_id_correct
+    [Documentation]    Target：验证sessionid正确时，能够获取与sessionid对应的登录用户的信息
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Get User Info    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${session_cookie}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${username}    Get Field Value    ${response}    username
+    Should Be Equal    ${username}    ${USER_WASU}
+    ${userid}    Get Field Value    ${response}    userid
+    Should Be Equal As Strings    ${userid}    ${ID_WASU}
+
+session_id_incorrect
+    [Documentation]    Target：验证session_id不正确时，返回E_GET_USER_INFO_FAILED
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Get User Info    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${INVALID_SESSION_COOKIE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_GET_USER_INFO_FAILED
+
+no_session_id
+    [Documentation]    Target：验证session_id参数缺失时，返回E_GET_USER_INFO_FAILED
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Get User Info    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_GET_USER_INFO_FAILED
+
+get_offline_user_info_failed
+    [Documentation]    Target：验证用户登出之后，获取用户信息 返回E_NOT_LOGIN
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Logout    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${session_cookie}
+    ${response}    Account Get User Info    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${session_cookie}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_LOGIN

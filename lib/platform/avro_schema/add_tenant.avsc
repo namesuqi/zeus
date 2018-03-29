@@ -1,0 +1,11 @@
+{
+    "type":"record",
+    "name":"add_tenant",
+    "fields":[
+        {"name":"tenant_id","type":"string"},
+        {"name":"tenant_name","type":"string"},
+        {"name":"groups","type":"string"},
+        {"name":"peer_prefix","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

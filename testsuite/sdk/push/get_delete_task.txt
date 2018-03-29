@@ -1,0 +1,42 @@
+*** Setting ***
+Library           ../../../lib/business/sdk_dash_board.py
+Library           Collections
+Library           HttpLibrary.HTTP
+Library           ../../../lib/database/redisdb.py
+Library           ../../../lib/database/RedisHandler.py
+Variables         ../../../lib/constant/sdk.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/constant/account.py
+Library           Remote    http://${SDK1_IP}:${REMOTE_AGENT_PORT}    WITH NAME    Sdk1Remote
+Library           ../../../lib/database/RedisCluster.py
+
+
+
+*** Test Cases ***
+RedisDeleteTask
+    [Documentation]    Target：Validate Sdk Can Execute the Delete Data Task
+    [Tags]
+    Sdk1Remote.RestartSDK
+    Sleep    15
+    ${login}    Getlogin
+    ${status}    Get Json Value    ${login}    /status
+    Log Many    "Login Status is: "    ${status}
+    Should Be Equal    ${status}    "E_OK"
+    ${peer_id}    Sdk1Remote.GetPeerID
+    Log    ${peer_id}
+    ${lsm}    GetLsm
+    ${files}    Get Json Value    ${lsm}    /bet/files
+    Should Be Equal    ${files}    []
+    Sdk1Remote.DownloadM3U8Url    hls    ${CIWEN_M3U8_URL}    ${USER_CIWEN}
+    Sleep    10
+    Sdk1Remote.DownloadM3U8File    hls    hls.m3u8    3
+    Sleep    20
+    ${lsm}    GetLsm
+    ${file_id}    ${file_size}    GetLsmFileInfo    ${lsm}
+    Log    ${file_id}
+    Log    ${file_size}
+    SADD    ${peer_id}    ${file_id}    ${file_size}    delete
+    Sleep    350
+    ${lsm}    GetLsm
+    ${match}    MatchFileId    ${file_id}    ${lsm}
+    Should Be Equal    ${match}    -1

@@ -1,0 +1,24 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/p2p_ops.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+get_one
+    [Tags]    ops_wait
+    Channel Strategy Off    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_ID_0}
+    ${response}    Get Channel Strategy Status    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${timestamp}    Get Field Value    ${response}    ${FILE_ID_0}
+    Should Not Be Empty    ${timestamp}
+    Channel Strategy On    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_ID_0}
+    ${response}    Get Channel Strategy Status    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${timestamp}    Get Field Value    ${response}    ${FILE_ID_0}
+    Should Be Equal As Strings    ${timestamp}    None

@@ -1,0 +1,126 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/interface/cp/stun_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/database/redis_handler.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/interface/cp/stun_hub_server.py
+
+*** Test Cases ***
+join_one_ok
+    [Documentation]    目标：验证启用一个在线peer(PNIC无stunIP信息)的p2p功能，stun-hub可以返回200和None
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+join_many1_ok
+    [Documentation]    目标：验证启用多个在线peer的p2p功能，stun-hub可以返回200和None
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[1]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[2]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_IDS_MANY1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_logout
+    [Documentation]    目标：验证启用不在线peer的p2p功能，stun-hub返回200和None
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_ID_LOGOUT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_invalid
+    [Documentation]    目标：验证peer_ids参数非法时，stun-hub可以返回400
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_ID_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_missing
+    [Documentation]    目标：验证peer_ids参数缺失时，stun-hub可以返回400
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_ID_MISSING}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_mix_invalid
+    [Documentation]    目标：验证peer_ids包含在线peer_id和非法peer_id时，stun-hub可以返回400
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MIX}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_IDS_MIX}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_mix_logout
+    [Documentation]    目标：验证peer_ids中包含在线peer_id和不在线peer_id时，stun-hub会返回200和None
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY2}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY2}[1]    ${VERSION_3_5}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_IDS_MANY2}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+join_one_with_stun_ip
+    [Documentation]    目标：验证启用一个3.6版本的在线peer(PNIC有stunIP信息)的p2p功能，stun-hub可以返回200和None
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION_3_6}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP2}
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+join_many1_with_stun_ip
+    [Documentation]    目标：验证启用多个不同版本的在线peer的p2p功能，stun-hub可以返回200和None
+    ...
+    ...    说明：peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[1]    ${VERSION_3_5}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[2]    ${VERSION_3_6}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP2}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[3]    ${VERSION_3_6}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP3}
+    ${response}    Hub P2p Enable    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${PEER_IDS_MANY1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

@@ -1,0 +1,121 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Library           ../../../lib/business/Channel.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/response/VerifyResponse.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/live.py
+
+*** Test Cases ***
+DeleteOK
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    video.test.com    live    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    0
+    Comment    ShouldBeEmpty    ${message}
+
+
+NoChannel
+    [Tags]    old_channel
+    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    video.test.com    live    livestream    ${OUTPUT_URL}
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    video.test.com    live    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    0
+    Comment    ShouldBeEmpty    ${message}
+
+NoAction
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${EMPTY}    1985
+    ...    192.168.1.10    video.test.com    live    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}
+
+NoClientid
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    ${EMPTY}
+    ...    192.168.1.10    video.test.com    live    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}
+
+NoIp
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    ${EMPTY}    video.test.com    live    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}
+
+NoVhost
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    ${EMPTY}    live    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}
+
+NoApp
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    video.test.com    ${EMPTY}    livestream    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}
+
+NoStream
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    video.test.com    live    ${EMPTY}    ${OUTPUT_URL}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}
+
+NoOutputUrl
+    [Tags]    old_channel
+    ${response}    ChannelDeleteLive    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    on_publish    1985
+    ...    192.168.1.10    video.test.com    live    livestream    ${EMPTY}
+    VerifyStatusCode    ${response}    200
+    ${requestId}    GetFieldValue    ${response}    requestId
+    ${code}    GetFieldValue    ${response}    code
+    Comment    ${message}    GetFieldValue    ${response}    message
+    ShouldNotBeEmpty    ${requestId}
+    ShouldBeEqual    ${code}    1
+    Comment    ShouldBeEmpty    ${message}

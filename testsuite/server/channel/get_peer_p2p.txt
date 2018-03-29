@@ -1,0 +1,238 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/interface/cp/channel_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/channel_server.py
+Library           ../../../lib/database/etcd_handler.py
+
+*** Test Cases ***
+pid_invalid_31character
+    [Documentation]    当pid输入为31位字符串时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_B}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_33character
+    [Documentation]    当pid输入为33位字符串时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_C}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_32character_no
+    [Documentation]    当pid输入为32位非16进制字符串时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_D}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_longcharacter
+    [Documentation]    当pid输入为超长字符串字符串时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_E}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_1character
+    [Documentation]    当pid输入为1位字符串时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_F}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_floatnumber
+    [Documentation]    当pid输入为浮点数时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${NUMBER_DECIMAL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_string_number
+    [Documentation]    当pid填写string number时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${NUMBER_STRING_NUMBER}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_number_decimal
+    [Documentation]    当pid位浮点数时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${NUMBER_DECIMAL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_number_negative
+    [Documentation]    当pid输入负数时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${NUMBER_NEGATIVE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_invalid_nullcharacter
+    [Documentation]    当pid输入0字符串时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_NULL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_missing
+    [Documentation]    当pid字段缺失时，返回400
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${UUID_INVALID_B}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+pid_ok
+    [Documentation]    当Pid正确的时候，返回200
+    [Tags]    channel
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_FF}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+p2p_value_zero
+    [Documentation]    配置用户p2p节点百分值为0，
+    ...    该用户的节点（pid末两位为00）向Channel-srv请求时, Channel-srv返回false；
+    ...    该用户的节点（pid末两位为01及之后）向Channel-srv请求时, Channel-srv返回均false
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${0}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_00}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_01}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_negative
+    [Documentation]    配置用户p2p节点百分值为-1, 该用户的节点向Channel-srv请求时, Channel-srv返回false
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${-1}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_00}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_twenty
+    [Documentation]    配置用户p2p节点百分值为20, 该用户的节点（pid末两位为33及之前）向Channel-srv请求时, Channel-srv均返回true;
+    ...    该用户的节点（pid末两位为34及之后）向Channel-srv请求时, Channel-srv均返回false
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${20}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_33}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_34}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_forty
+    [Documentation]    配置用户p2p节点百分值为40,该用户的节点（pid末两位为66及之前）向Channel-srv请求时, Channel-srv均返回true；该用户的节点（pid末两位为67及之后）向Channel-srv请求时, Channel-srv均返回false
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${40}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_66}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_67}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_eighty
+    [Documentation]    配置用户p2p节点百分值为80, 该用户的节点（pid末两位为CC及之前）向Channel-srv请求时, Channel-srv均返回true；该用户的节点（pid末两位为CD及之后）向Channel-srv请求时, Channel-srv均返回false
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${80}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_CC}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_CD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_hundred
+    [Documentation]    配置用户p2p节点百分值为100, 该用户的节点向Channel-srv请求时, Channel-srv均返回true
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${100}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_FF}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_overflow
+    [Documentation]    配置用户p2p节点百分值为101, 该用户的节点向Channel-srv请求时, Channel-srv均返回true
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    ${101}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_FF}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_string
+    [Documentation]    配置用户p2p节点百分值为字符, 该用户的节点向Channel-srv请求时, Channel-srv返回false
+    [Tags]    channel
+    [Setup]    set_etcd_key    ${USER_ID_222}    string    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_00}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    [Teardown]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+
+p2p_multi_user_config
+    [Documentation]    多个用户配置p2p节点百分值, 不同用户的节点向Channel-srv请求时, Channel-srv可根据配置参数返回对应信息
+    ...    1. 配置用户22222222节点百分值为20,pid末两位是33，该用户的节点向Channel-srv请求时, Channel-srv返回true
+    ...    2. 配置用户33333333节点百分值为40,pid末两位是67，该用户的节点向Channel-srv请求时, Channel-srv返回false
+    [Tags]    channel
+    set_etcd_key    ${USER_ID_222}    ${20}    ${ETCD_SDK_P2P_PATH}
+    set_etcd_key    ${USER_ID_333}    ${40}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_33}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_67_USER_333}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    False
+    del_etcd_key    ${USER_ID_333}    ${ETCD_SDK_P2P_PATH}
+
+p2p_value_null
+    [Documentation]    将该用户p2p节点配置删除, 该用户的节点向Channel-srv请求时,Channel-srv均返回true
+    [Tags]    channel
+    [Setup]    del_etcd_key    ${USER_ID_222}    ${ETCD_SDK_P2P_PATH}
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_FF}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${p2p}    get_field_value    ${response}    p2p
+    Should Be Equal As Strings    ${p2p}    True
+    [Teardown]

@@ -1,0 +1,163 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/interface/cp/stun_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/database/redis_handler.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/interface/cp/stun_hub_server.py
+
+*** Test Cases ***
+join_one_ok
+    [Documentation]    目标：验证拉入一个在线peer，stun-hub可以返回200和None
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${data}    Get Field Value    ${response}    useable_peer_count
+    Should Be Equal    ${data}    ${1}
+
+join_many1_ok
+    [Documentation]    目标：验证拉入多个在线peer，stun-hub可以返回200和None
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    :FOR    ${peer_id}    IN    @{PEER_IDS_MANY1}
+    \    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${peer_id}    ${VERSION}
+    \    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    \    ...    ${STUN_IP1}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_IDS_MANY1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${rsp_useable_peer_count}    Get Field Value    ${response}    useable_peer_count
+    ${expect_num}    Get Length    ${PEER_IDS_MANY1}
+    Should Be Equal    ${rsp_useable_peer_count}    ${expect_num}
+
+peer_ids_logout
+    [Documentation]    目标：验证拉入不在线peer，stun-hub返回200和None
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Logout    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_LOGOUT}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_ID_LOGOUT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${data}    Get Field Value    ${response}    useable_peer_count
+    Should Be Equal    ${data}    ${0}
+
+peer_ids_invalid
+    [Documentation]    目标：验证peer_ids参数非法时，stun-hub可以返回400
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_ID_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_missing
+    [Documentation]    目标：验证peer_ids参数缺失时，stun-hub可以返回400
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_ID_MISSING}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+file_id_invalid
+    [Documentation]    目标：验证file_id参数非法时，stun-hub可以返回400
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID_INVALID}    ${FILE_URL}
+    ...    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+file_id_missing
+    [Documentation]    目标：验证file_id参数缺失时，stun-hub可以返回400
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_URL}    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+file_url_not_exist
+    [Documentation]    目标：验证file_url为invalid时，stun-hub可以返回200（stun-hub针对file_url，只校验其是否为空，不进行数据校验，所以本测试用例目标为：stun-hub收到一个不存在或不合法的url后能够处理该请求）
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL_INVALID}
+    ...    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${data}    Get Field Value    ${response}    useable_peer_count
+    Should Be Equal    ${data}    ${1}
+
+file_url_missing
+    [Documentation]    目标：验证file_url参数缺失时，stun-hub可以返回400
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${EMPTY}
+    ...    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_mix_invalid
+    [Documentation]    目标：验证peer_ids包含在线peer_id和非法peer_id时，stun-hub可以返回400
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MIX}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_IDS_MIX}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_mix_logout
+    [Documentation]    目标：验证peer_ids中包含在线peer_id和不在线peer_id时，stun-hub会返回200和None
+    ...
+    ...    说明：file_id, file_url, peer_ids为必选参数
+    [Tags]    stun-hub
+    [Setup]
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY2}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY2}[1]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}
+    ...    ${PEER_IDS_MANY2}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${data}    Get Field Value    ${response}    useable_peer_count
+    Should Be Equal    ${data}    ${2}

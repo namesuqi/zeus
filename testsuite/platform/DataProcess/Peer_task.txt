@@ -1,0 +1,112 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_PeerOnlineTimeCleaned_data
+    [Tags]    platform_test
+    createtabledata    PeerOnlineTimeCleaned
+
+CurrentOnlinePeerDistributeJob_task
+    [Documentation]    prerequisite: PeerOnlineTimeCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21    export=true
+    createjobexpecteddata    ${CurrentOnlinePeerDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentOnlinePeerDistributeJob['mysqltable']}
+    startodpsjob    ${workpath}    ${CurrentOnlinePeerDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${CurrentOnlinePeerDistributeJob['name']}    select username, online_count, play_type from ${CurrentOnlinePeerDistributeJob['mysqltable']}
+    Should Be True    ${re}
+
+HourPeerOnlineDistributeJob_task
+    [Documentation]    prerequisite: PeerOnlineTimeCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    15
+    @{varlist}    Create List    hour=true    time=15    export=true
+    createjobexpecteddata    ${HourPeerOnlineDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourPeerOnlineDistributeJob['mysqltable']} where date_time=${recorddate} and hour=15
+    startodpsjob    ${workpath}    ${HourPeerOnlineDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourPeerOnlineDistributeJob['name']}    select hour, username, online_count, play_type from ${HourPeerOnlineDistributeJob['mysqltable']} where date_time=${recorddate} and hour=15
+    Should Be True    ${re}
+
+DailyPeerActivityJob_task
+    [Documentation]    prerequisite: PeerOnlineTimeCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21    export=true
+    createjobexpecteddata    ${DailyPeerActivityJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyPeerActivityJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyPeerActivityJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyPeerActivityJob['name']}    select peer_prefix, active_count, play_type from ${DailyPeerActivityJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailyPeerOnlineTimeJob_task
+    [Documentation]    follow the job DailyPeerActivityJob_task
+    [Tags]    odps    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Integer    5
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyPeerOnlineTimeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyPeerOnlineTimeJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyPeerOnlineTimeJob['name']}    ${varlist}
+    downloaddatafromodps    ${DailyPeerOnlineTimeJob['outputtable']}    /outputdata/${DailyPeerOnlineTimeJob['name']}ODPS.txt
+    ${re}    compareresultpatternodps    ${DailyPeerOnlineTimeJob['name']}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+    ${re}    compareresultlinenumbermysql    ${DailyPeerOnlineTimeJob['name']}    select peer_prefix, average_online_time, play_type from ${DailyPeerOnlineTimeJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+WeeklyAverageOnlineTimeJob_task
+    [Documentation]    follow the job DailyPeerOnlineTime
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.5
+    @{varlist}    Create List    exectime=20160515    export=true
+    createjobexpecteddata    ${WeeklyAverageOnlineTimeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${WeeklyAverageOnlineTimeJob['mysqltable']} where sun_time='20160515'
+    startodpsjob    ${workpath}    ${WeeklyAverageOnlineTimeJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${WeeklyAverageOnlineTimeJob['name']}    select peer_prefix, average_time, play_type from ${WeeklyAverageOnlineTimeJob['mysqltable']} where sun_time='20160515'    ${var0}    ${var1}
+    Should Be True    ${re}
+
+MonthlyActivePeerCountAverageJob_task
+    [Documentation]    follow the job DailyPeerActivityJob_task
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Integer    2
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    createjobexpecteddata    ${MonthlyActivePeerCountAverageJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${MonthlyActivePeerCountAverageJob['mysqltable']} where month_time=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyActivePeerCountAverageJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${MonthlyActivePeerCountAverageJob['name']}    select peer_prefix, active_count, play_type from ${MonthlyActivePeerCountAverageJob['mysqltable']} where month_time=${recordmonth}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+MonthlyDistinctPeerIDJob_task
+    [Documentation]    special download mode from odps to notice
+    ...    prerequisite: PeerOnlineTimeCleaned_data created and the output will add into the input
+    [Tags]    odps    platform_task
+    createjobexpecteddata    ${MonthlyDistinctPeerIDJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${MonthlyDistinctPeerIDJob['name']}
+    downloaddatafromodpsbypartten    ${MonthlyDistinctPeerIDJob['outputtable']}    /outputdata/${MonthlyDistinctPeerIDJob['name']}DB.txt    month=201603
+    ${re}    compareresult    ${MonthlyDistinctPeerIDJob['name']}
+    Should Be True    ${re}
+
+MonthlyPeerActivityJob_task
+    [Documentation]    follow the job MonthlyDistinctPeerID
+    [Tags]    platform_task
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    createjobexpecteddata    ${MonthlyPeerActivityJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${MonthlyPeerActivityJob['mysqltable']} where month_time=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyPeerActivityJob ['name']}    ${varlist}
+    ${re}    compareresultmysql    ${MonthlyPeerActivityJob ['name']}    select peer_prefix, active_count, play_type from ${MonthlyPeerActivityJob['mysqltable']} where month_time=${recordmonth}
+    Should Be True    ${re}

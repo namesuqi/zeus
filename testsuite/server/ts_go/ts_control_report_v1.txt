@@ -1,0 +1,645 @@
+*** Settings ***
+Documentation     SDK向report-srv(ts-go)发送control-report的接口测试
+...
+...               请求体 : {peer_id, duration, leifengs, channels}
+...               * leifengs或channels 可选
+Force Tags
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/interface/cp/report_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+
+*** Test Cases ***
+control_report_ok_op_add
+    [Documentation]    验证 : leifengs和channels的op都为add, channel-type为live时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_op_del
+    [Documentation]    验证 : leifengs和channels的op都为del, channel-type为vod时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_DEL}    ${FILE_ID_2}
+    ...    ${TYPE_VOD}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_DEL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_no_leifengs
+    [Documentation]    验证 : leifengs字段缺失时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${None}    ${None}    ${None}    ${None}    ${None}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_no_channels
+    [Documentation]    验证 : channels字段缺失时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_all_0
+    [Documentation]    验证 : 所有数字类型(duration, channels-cppc, download, provide, leifengs-chunk_id, cdn, p2p)都为0时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION_0}
+    ...    ${FILE_ID_1}    ${CPPC_0}    ${BYTES_0}    ${BYTES_0}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID_0}    ${BYTES_0}    ${BYTES_0}    ${P2PENABLE_TRUE}    ${OP_DEL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_no_duration
+    [Documentation]    验证 : duration为空时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${None}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_no_leifengs_op
+    [Documentation]    验证 : leifengs字段的op为空时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_vod_no_chunk_id
+    [Documentation]    验证 : channels字段的type为vod, chunk_id为空时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_VOD}    ${None}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_p2penable_false
+    [Documentation]    验证 : channels字段的p2penable为false时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_FALSE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_no_p2penable
+    [Documentation]    验证 : channels字段的p2penable为空时, 返回200
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${None}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_ok_no_channels_op
+    [Documentation]    验证 : channels字段的op为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${None}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+control_report_not_login
+    [Documentation]    验证 : peer_id未登录时, 返回200和E_TS_NOT_LOGIN
+    [Tags]    ts_go    regression
+    Peer Logout    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_TS_NOT_LOGIN
+
+control_report_invalid_peer_id_1
+    [Documentation]    验证 : peer_id格式不对(非三十二位)时, 返回400
+    [Tags]    ts_go    regression
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${INVALID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_peer_id_2
+    [Documentation]    验证 : peer_id格式不对(非十六进制)时, 返回400
+    [Tags]    ts_go    regression
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID_INVALID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_peer_id
+    [Documentation]    验证 : peer_id为空时, 返回400
+    [Tags]    ts_go    regression
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${None}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_duration_1
+    [Documentation]    验证 : duration为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${NEGATIVE}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_duration_2
+    [Documentation]    验证 : duration为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${STRING_NUMBER}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_duration_3
+    [Documentation]    验证 : duration为字符串类型时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${INVALID}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_duration_4
+    [Documentation]    验证 : duration为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DECIMAL}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_leifengs_file_id
+    [Documentation]    验证 : leifengs字段的file_id格式不对时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${INVALID}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_leifengs_file_id
+    [Documentation]    验证 : leifengs字段的file_id为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${None}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cppc_1
+    [Documentation]    验证 : leifengs字段的cppc为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${NEGATIVE}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cppc_2
+    [Documentation]    验证 : leifengs字段的cppc为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${STRING_NUMBER}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cppc_3
+    [Documentation]    验证 : leifengs字段的cppc为字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${INVALID}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cppc_4
+    [Documentation]    验证 : leifengs字段的cppc为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${DECIMAL}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_cppc
+    [Documentation]    验证 : leifengs字段的cppc为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${None}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_download_1
+    [Documentation]    验证 : leifengs字段的download为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${NEGATIVE}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_download_2
+    [Documentation]    验证 : leifengs字段的download为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${STRING_NUMBER}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_download_3
+    [Documentation]    验证 : leifengs字段的download为字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${INVALID}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_download_4
+    [Documentation]    验证 : leifengs字段的download为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${DECIMAL}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_download
+    [Documentation]    验证 : leifengs字段的download为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${None}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_provide_1
+    [Documentation]    验证 : leifengs字段的provide为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${NEGATIVE}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_provide_2
+    [Documentation]    验证 : leifengs字段的provide为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${STRING_NUMBER}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_provide_3
+    [Documentation]    验证 : leifengs字段的provide为字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${INVALID}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_provide_4
+    [Documentation]    验证 : leifengs字段的provide为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${DECIMAL}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_provide
+    [Documentation]    验证 : leifengs字段的provide为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${None}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_leifengs_op
+    [Documentation]    验证 : leifengs字段的op不为 add/del 时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${INVALID}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_channels_file_id
+    [Documentation]    验证 : channels字段的file_id格式不对时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${INVALID}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_channels_file_id
+    [Documentation]    验证 : channels字段的file_id为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${None}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_channels_type
+    [Documentation]    验证 : channels字段的type不为 live/vod/download 时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${INVALID}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_channels_type
+    [Documentation]    验证 : channels字段的type为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${None}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_chunk_id_1
+    [Documentation]    验证 : channels字段的chunk_id为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${NEGATIVE}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_chunk_id_2
+    [Documentation]    验证 : channels字段的chunk_id为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${STRING_NUMBER}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_chunk_id_3
+    [Documentation]    验证 : channels字段的chunk_id为字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${INVALID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_chunk_id_4
+    [Documentation]    验证 : channels字段的chunk_id为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${DECIMAL}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_live_no_chunk_id
+    [Documentation]    验证 : channels字段的type为live, chunk_id为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${None}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cdn_1
+    [Documentation]    验证 : channels字段的cdn为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${NEGATIVE}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cdn_2
+    [Documentation]    验证 : channels字段的cdn为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${STRING_NUMBER}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cdn_3
+    [Documentation]    验证 : channels字段的cdn为字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${INVALID}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_cdn_4
+    [Documentation]    验证 : channels字段的cdn为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${DECIMAL}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_cdn
+    [Documentation]    验证 : channels字段的cdn为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${None}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_p2p_1
+    [Documentation]    验证 : channels字段的p2p为负数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${NEGATIVE}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_p2p_2
+    [Documentation]    验证 : channels字段的p2p为数字型字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${STRING_NUMBER}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_p2p_3
+    [Documentation]    验证 : channels字段的p2p为字符串时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${INVALID}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_p2p_4
+    [Documentation]    验证 : channels字段的p2p为小数时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${DECIMAL}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_no_p2p
+    [Documentation]    验证 : channels字段的p2p为空时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${None}    ${P2PENABLE_TRUE}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_p2penable
+    [Documentation]    验证 : channels字段的p2penable不为 true/false 时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${INVALID}    ${OP_ADD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+control_report_invalid_channels_op
+    [Documentation]    验证 : channels字段的op不为 add/del 时, 返回400
+    [Tags]    ts_go    regression
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID}    ${DURATION}
+    ...    ${FILE_ID_1}    ${CPPC}    ${BYTES_1}    ${BYTES_2}    ${OP_ADD}    ${FILE_ID_2}
+    ...    ${TYPE_LIVE}    ${CHUNK_ID}    ${BYTES_2}    ${BYTES_3}    ${P2PENABLE_TRUE}    ${INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None

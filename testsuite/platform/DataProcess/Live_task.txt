@@ -1,0 +1,53 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_LiveProgressCleaned_data
+    [Tags]    platform_test
+    createtabledata    LiveProgressCleaned
+
+DailyLivePeerActivityJob_task
+    [Documentation]    prerequisite: LiveProgressCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    hour=true    export=true
+    createjobexpecteddata    ${DailyLivePeerActivityJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyLivePeerActivityJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyLivePeerActivityJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyLivePeerActivityJob['name']}    select peer_prefix, active_count, play_type from ${DailyLivePeerActivityJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+HourLivePeerOnlineDistributeJob_task
+    [Documentation]    prerequisite: LiveProgressCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    15
+    @{varlist}    Create List    hour=true    time=15    export=true
+    createjobexpecteddata    ${HourLivePeerOnlineDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourLivePeerOnlineDistributeJob['mysqltable']} where date_time=${recorddate} and hour=${var}
+    startodpsjob    ${workpath}    ${HourLivePeerOnlineDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourLivePeerOnlineDistributeJob['name']}    select hour, username, online_count, play_type from ${HourLivePeerOnlineDistributeJob ['mysqltable']} where date_time=${recorddate} and hour=${var}
+    Should Be True    ${re}
+
+create_QosBufferingCleaned_data
+    [Tags]    platform_test
+    createtabledata    QosBufferingCleaned
+
+CurrentLiveRoughnessJob_task
+    [Documentation]    prerequisite: QosBufferingCleaned_data and LiveProgressCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.001
+    ${var}    Convert to Integer    23
+    @{varlist}    Create List    hour=true    time=23    export=true
+    createjobexpecteddata    ${CurrentLiveRoughnessJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentLiveRoughnessJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${CurrentLiveRoughnessJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${CurrentLiveRoughnessJob['name']}    select peer_prefix, roughness, five_minute_index, play_type from ${CurrentLiveRoughnessJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}

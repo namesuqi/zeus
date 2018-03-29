@@ -1,0 +1,28 @@
+*** Settings ***
+Library           ../../../lib/business/sdk_dash_board.py
+Library           Collections
+Library           HttpLibrary.HTTP
+Variables         ../../../lib/constant/sdk.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/constant/account.py
+Library           Remote    http://${SDK1_IP}:${REMOTE_AGENT_PORT}    WITH NAME    Sdk1Remote
+
+*** Test Cases ***
+SdkPlayHlsVideoOK
+    [Documentation]    Target：Validate that sdk can play hls video file
+    [Tags]
+    Sdk1Remote.RestartSDK
+    Sleep    15
+    ${login}    GetLogin
+    ${status}    Get Json Value    ${login}    /status
+    Log Many    "Login Status is: "    ${status}
+    Should Be Equal    ${status}    "E_OK"
+    Sdk1Remote.DownloadM3U8Url    cdn    ${CIWEN_M3U8_URL}
+    Sdk1Remote.DownloadM3U8Url    hls    ${CIWEN_M3U8_URL}    ${USER_CIWEN}
+    Sleep    5
+    Sdk1Remote.DownloadM3U8File    cdn    cdn.m3u8    3
+    Sdk1Remote.DownloadM3U8File    hls    hls.m3u8    3
+    Sleep    15
+    ${sdk_file_md5}    Sdk1Remote.GetFileMd5    3.cdn
+    ${cdn_file_md5}    Sdk1Remote.GetFileMd5    3.hls
+    Should Be Equal    ${sdk_file_md5}    ${cdn_file_md5}

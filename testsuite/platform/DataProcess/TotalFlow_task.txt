@@ -1,0 +1,62 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_DownloadFlowCleaned_data
+    [Tags]    platform_test
+    createtabledata    DownloadFlowCleaned
+
+create_UploadFlowCleaned_data
+    [Tags]    platform_test
+    createtabledata    UploadFlowCleaned
+
+HourTotalFlowJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data and UploadFlowCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    11
+    @{varlist}    Create List    hour=true    time=11    export=true
+    createjobexpecteddata    ${HourTotalFlowJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourTotalFlowJob['mysqltable']} where date_time=${recorddate} and hour=11
+    startodpsjob    ${workpath}    ${HourTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourTotalFlowJob['name']}    select hour, username, cdn_download, p2p_download, total_download, upload, play_type from ${HourTotalFlowJob['mysqltable']} where date_time=${recorddate} and hour=11
+    Should Be True    ${re}
+
+TodayTotalFlowJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data and UploadFlowCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    23
+    @{varlist}    Create List    hour=true    time=23    export=true
+    createjobexpecteddata    ${TodayTotalFlowJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayTotalFlowJob['mysqltable']}
+    startodpsjob    ${workpath}    ${TodayTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${TodayTotalFlowJob['name']}    select username, cdn_download, p2p_download, total_download, upload, play_type from ${TodayTotalFlowJob['mysqltable']}
+    Should Be True    ${re}
+
+DailyTotalFlowJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data and UploadFlowCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyTotalFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyTotalFlowJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyTotalFlowJob['name']}    select username, cdn_download, p2p_download, total_download, upload, play_type from ${DailyTotalFlowJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+MonthlyTotalFlowJob_task
+    [Documentation]    follow the job DailyTotalFlowJob_task
+    [Tags]    platform_task
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    createjobexpecteddata    ${MonthlyTotalFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${MonthlyTotalFlowJob['mysqltable']} where month=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${MonthlyTotalFlowJob['name']}    select username, cdn_download, p2p_download, total_download, upload, play_type from ${MonthlyTotalFlowJob['mysqltable']} where month=${recordmonth}
+    Should Be True    ${re}

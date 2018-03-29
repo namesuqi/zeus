@@ -1,0 +1,32 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_deploy.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+
+*** Test Cases ***
+get ok
+    [Documentation]    获取可部署的服务返给Control（数据库中有可部署的服务）
+    [Tags]    available services
+    ${response}    Get Available Services    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"success","data":[{"type":"控制面","server_name":["stun-go","stun-hub","tracker","tracker-go","channel","seed-mgr","courier","upgrade","recorder-ts","kafka-goto","funnel","httpdns","channel-mgr","dir"]},{"type":"BI平台","server_name":["spark"]},{"type":"Boss","server_name":["crm","panel"]},{"type":"数据面","server_name":["push-mgr","port","srs"]},{"type":"总览","server_name":["未分配"]}]}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    success
+
+get no available service
+    [Documentation]    获取可部署的服务返给Control（数据库中无可部署的服务）
+    ${response}    Get Available Services    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+get available service mysql disconnected
+    [Documentation]    获取可部署的服务返给Control（数据库连接失败）
+    ${response}    Get Available Services    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

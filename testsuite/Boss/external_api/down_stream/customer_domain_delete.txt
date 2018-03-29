@@ -1,0 +1,421 @@
+*** Settings ***
+Documentation     Boss外部接口-客户API
+...
+...               下游 : 删除域名
+Library           ../../../../lib/response/parse_response.py
+Library           ../../../../lib/response/verify_response.py
+Variables         ../../../../lib/constant/request.py
+Library           ../../../../lib/interface/boss/external_api.py
+Library           ../../../../lib/interface/boss/api_data.py
+Library           ../../../../lib/interface/boss/extra_function.py
+Variables         ../../../../lib/interface/boss/api_constant.py
+
+*** Test Cases ***
+domain_del_one_ok
+    [Documentation]    验证: 当要删除单个域名且是该客户的域名时,服务器可返回200和删除该客户的域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LEVEL}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_del_all_ok
+    [Documentation]    验证: 当要删除的多个域名都是该客户的域名时,服务器可返回200和删除该客户的域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LEVEL}    ${DOMAIN_HYPHEN_NUMBER}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+access_key_none
+    [Documentation]    验证 : 请求参数api_access_key为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${None}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${None}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_empty
+    [Documentation]    验证 : 请求参数api_access_key为""时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_1_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_missing
+    [Documentation]    验证：请求参数api_access_key字段缺失时，服务器能返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_1_DOMAIN_1}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_invalid
+    [Documentation]    验证 : 请求参数api_access_key包含非法字符时, 能正常响应, 返回200及错误信息, 且不会删除其域名信息
+    [Tags]    boss_external_api
+    :FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${domain}    create list    ${CUSTOMER_1_DOMAIN_1}
+    \    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_type_number
+    [Documentation]    验证 : 请求参数api_access_key为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${domain}    create list    ${CUSTOMER_1_DOMAIN_1}
+    \    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+timestamp_none
+    [Documentation]    验证 : 请求参数timestamp为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_1_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${None}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_missing
+    [Documentation]    验证 : 请求参数timestamp字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_2_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}    ${1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_invalid
+    [Documentation]    验证 : 请求参数timestamp不为非负整数时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${timestamp_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${timestamp_invalid}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${timestamp_invalid}    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_none
+    [Documentation]    验证 : 请求参数sign为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_2_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${None}    ${domains}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_invalid
+    [Documentation]    验证 : 请求参数sign为三十二位字符串, 但包含非法字符时, 会返回200及错误信息, 且不会删除其域名信息
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_1_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+
+sign_missing
+    [Documentation]    验证 : 请求参数sign字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_1_DOMAIN_LIST}    ${2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_type_number
+    [Documentation]    验证 : 请求参数sign为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_length_not_match
+    [Documentation]    验证 : 请求参数sign不为三十二位时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_length_error}    IN    @{SIGN_LENGTH_INCORRECT_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_length_error}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+domains_none
+    [Documentation]    验证：domain_names为None时，服务器能返回400和校验的错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${None}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+domains_type_number
+    [Documentation]    验证：domain_names为数字类型时，服务器能返回200和错误信息
+    [Tags]    boss_external_api
+    : FOR    ${domains_number}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains_number}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+
+domains_string
+    [Documentation]    验证：domain_names为String类型时，服务器能返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${STRING_SPACE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domains_empty_dict
+    [Documentation]    验证: domain_names字段为空字典时, 服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${EMPTY_DICT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domains_empty_list
+    [Documentation]    验证: domain_names字段为空列表时, 服务器可返回200, 不会报错(数据库中域名记录不会更改)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${EMPTY_LIST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domains_missing
+    [Documentation]    验证：domain_names字段缺失时，服务器能返回400和校验的错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_3_DOMAIN_LIST}    ${3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+domain_missing
+    [Documentation]    验证：domain_names中domain_name字段缺失时，服务器可返回200和错误信息（数据库中域名不会被删除）
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${EMPTY}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domain_none
+    [Documentation]    验证：domain_names中domain_name为none时，服务器可返回200和错误信息（数据库中域名不会被删除）
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${STRING_SPACE}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domain_empty_dict
+    [Documentation]    验证：domain_names中domain_name为空字典时，服务器可返回200和错误信息（数据库中域名不会被删除）
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${EMPTY_DICT}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domain_type_number
+    [Documentation]    验证：domain_names中domain_name为数字类型时，服务器可返回200和错误信息(数据库中域名不会被删除)
+    [Tags]    boss_external_api
+    : FOR    ${domains_error}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${domain}    create list    ${domains_error}    ${CUSTOMER_1_DOMAIN_1}
+    \    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+
+domain_repeat
+    [Documentation]    验证：当要删除的多个域名中存在重复的域名，服务器可返回200和错误信息(数据库中数据不会被删除)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domian}    create list    ${CUSTOMER_2_DOMAIN_1}    ${CUSTOMER_2_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domian}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domain_mix
+    [Documentation]    验证：当要删除的多个域名中存在不是该客户的域名时, 会返回200和错误信息(数据库中域名记录不会更改）
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_1_DOMAIN_1}    ${CUSTOMER_2_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domain_part_error
+    [Documentation]    验证: 删除多个域名且其中包含数据库中不存在的域名时, 服务器可返回200和错误信息(数据库中的数据不会被更改)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domian}    create list    ${CUSTOMER_1_DOMAIN_1}    ${CUSTOMER_1_DOMAIN_2}    ${DOMAIN_NAME_LEVEL}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domian}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+
+domain_all_error
+    [Documentation]    验证：删除多个域名但所有域名都不属于该客户时，服务器可返回200和错误信息(数据库中的信息不会被更改)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_2_DOMAIN_1}    ${DOMAIN_NAME_LEVEL}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Delete    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}
+
+*** Keywords ***

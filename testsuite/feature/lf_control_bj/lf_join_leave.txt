@@ -1,0 +1,51 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/feature/lf_control_bj/lf_data.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/feature/lf_control_bj/StunLf.py
+Library           ../../../lib/feature/lf_control_bj/GetLfFile.py
+
+*** Test Cases ***
+GetLfId
+    [Documentation]    update leifengs' peer_id from remote_lf_ips
+    [Tags]    get_lf_id    lf_control_bj
+    ${response}    GetAllInfo
+
+UpdateLfIds
+    [Documentation]    comment: update leifengs' peer_id from robot
+    [Tags]    lf_control_bj    update_lf_id
+    ${response}    GetLfInfo
+
+JoinLF
+    [Documentation]    join leifeng for another channel
+    [Tags]    lf_join_bj    lf_control_bj
+    ${r1}    JoinLfNum    0    50    1    ${XL_FILE_INFO}
+
+LeaveLF
+    [Documentation]    leave leifeng for another channel
+    [Tags]    lf_leave_bj    lf_control_bj
+    ${r1}    LeaveLfNum    0    50    ${XL_FILE_INFO}
+
+HksJoin
+    [Documentation]    parameter setting：lf_start_num, lf_stop_num, cppc, file_info
+    [Tags]    hks_join_bj    lf_control_bj
+    ${r1}    JoinLfNum    0    35    1    ${HKS_FILE_INFO}
+
+HksLeave
+    [Tags]    hks_leave_bj    lf_control_bj
+    ${r1}    LeaveLfNum    50    100    ${HKS_FILE_INFO}
+
+local_join
+    [Documentation]    parameters: http, stun_ip, stun_port, lf_id, cppc, file_info
+    [Tags]    local_join_bj    lf_control_bj
+    ${r1}    LfJoin    ${HTTP}    ${STUN_IP}    ${STUN_PORT}    00000004AE9D45318990A9A56B2F31D6    1
+    ...    ${HKS_FILE_INFO}
+
+local_leave
+    [Documentation]    parameters: http, stun_ip, stun_port, lf_id, file_info
+    [Tags]    local_leave_bj    lf_control_bj
+    ${r1}    LfLeave    ${HTTP}    ${STUN_IP}    ${STUN_PORT}    000000047CAE4B73ACDDFACD71580E70

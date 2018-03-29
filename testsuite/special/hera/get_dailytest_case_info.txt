@@ -1,0 +1,11 @@
+*** Settings ***
+Default Tags
+Variables       ../../../lib/hera/const.py
+Library         ../../../lib/hera/auto_case_stats.py
+
+*** Test Cases ***
+send_dailytest_case_info
+    [Documentation]    Target：get dailytest case info and send it to hera manage system
+    [Tags]    hera
+    ${result}    Send Case Info
+    Should Be True    ${result}

@@ -1,0 +1,15 @@
+{
+    "type":"record",
+    "name":"live_create_channel",
+    "fields":[
+        {"name":"file_id","type":"string"},
+        {"name":"file_url","type":"string"},
+        {"name":"date_file_url","type":"string"},
+        {"name":"rate","type":"long"},
+        {"name":"input_video_format","type":"string"},
+        {"name":"output_video_format","type":"string"},
+        {"name":"ppc","type":"long"},
+        {"name":"psize","type":"long"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

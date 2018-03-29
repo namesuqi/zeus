@@ -1,0 +1,39 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+search_ok
+    [Documentation]    目标:验证能够根据有效Md5获取文件信息
+    [Tags]    dir    regression    api
+    ${response}    Dir Search By Md5    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${CNTV_FILE1_MD5}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${CNTV_FILE1_MD5}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{FileInfo}[0]
+    ${size}    Get Field Value    ${response}    size
+    Should Be Equal    ${size}    @{FileInfo}[1]
+
+search_invalid_md5
+    [Documentation]    目标:验证Md5无效时，返回E_FILE_NON_EXISTS
+    [Tags]    dir    regression    api
+    ${response}    Dir Search By Md5    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    INVALIDMD5
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FILE_NON_EXISTS
+
+search_no_md5
+    [Documentation]    目标:验证不输入Md5时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Search By Md5    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING

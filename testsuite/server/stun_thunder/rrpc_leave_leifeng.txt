@@ -1,0 +1,138 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/interface/cp/stun_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/stun_server.py
+Library           ../../../lib/database/redis_handler.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/stun_udp_req.py
+
+*** Test Cases ***
+leave_one_ok
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证清退一个在线peer，stun可以返回200和None
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    ${PEER_ID_ONLINE}    ${NAT_TYPE1}    ${PRI_IP1}
+    ...    ${PRI_PORT1}    ${LISTENING_PORT}    ${True}
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${sent_count}    Get Response Data By Path    ${response}    sent_count
+    Should Be Equal As Strings    ${sent_count}    1
+
+leave_many1_ok
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证清退多个在线peer，stun可以返回200和None
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]
+    : FOR    ${PEER_ID_I}    IN    @{PEER_IDS_MANY1}
+    \    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    ${PEER_ID_I}    ${NAT_TYPE1}    ${PRI_IP1}
+    \    ...    ${PRI_PORT1}    ${LISTENING_PORT}    ${True}
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_IDS_MANY1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${sent_count}    Get Response Data By Path    ${response}    sent_count
+    Should Be Equal As Strings    ${sent_count}    4
+
+peer_ids_logout
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证清退一个不在线peer时，stun可以返回200和E_PEER_LOGOUT
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_LOGOUT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PEER_LOGOUT
+    ${sent_count}    Get Response Data By Path    ${response}    sent_count
+    Should Be Equal As Strings    ${sent_count}    None
+
+peer_ids_invalid
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证peer_ids参数非法时，stun可以返回400
+    [Tags]    stun_thunder
+    [Setup]
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_missing
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证peer_ids参数缺失时，stun可以返回400
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_MISSING}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+file_id_invalid
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证file_id非法时，stun可以返回400
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    ${PEER_ID_ONLINE}    ${NAT_TYPE1}    ${PRI_IP1}
+    ...    ${PRI_PORT1}    ${LISTENING_PORT}    ${True}
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID_INVALID}    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+file_id_missing
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证file_id参数缺失时，stun可以返回400
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    ${PEER_ID_ONLINE}    ${NAT_TYPE1}    ${PRI_IP1}
+    ...    ${PRI_PORT1}    ${LISTENING_PORT}    ${True}
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    \    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_mix_invalid
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证peer_ids包含在线peer_id和非法peer_id时，stun可以返回400
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    @{PEER_IDS_MIX}[0]    ${NAT_TYPE1}    ${PRI_IP1}
+    ...    ${PRI_PORT1}    ${LISTENING_PORT}    ${True}
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_IDS_MIX}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+peer_ids_mix_logout
+    [Documentation]    前提 : 未集群的stun-srv, 通过8000端口能提供反向控制雷锋服务
+    ...
+    ...    目标：验证peer_ids包含在线peer_id和不在线peer_id时，stun会返回200和None
+    ...
+    ...    说明：file_id, peer_ids为必选参数
+    [Tags]    stun_thunder
+    [Setup]
+    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    @{PEER_IDS_MANY2}[0]    ${NAT_TYPE1}    ${PRI_IP1}    ${PRI_PORT1}
+    ...    ${LISTENING_PORT}    ${True}
+    Sdk Nat Update Req    ${STUN_OPEN_8000_HOST}    ${STUN_PORT}    @{PEER_IDS_MANY2}[1]    ${NAT_TYPE1}    ${PRI_IP1}    ${PRI_PORT1}
+    ...    ${LISTENING_PORT}    ${True}
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_OPEN_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_IDS_MANY2}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${sent_count}    Get Response Data By Path    ${response}    sent_count
+    Should Be Equal As Strings    ${sent_count}    2

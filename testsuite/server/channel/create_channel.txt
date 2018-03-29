@@ -1,0 +1,32 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Library           ../../../lib/business/Channel.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/response/VerifyResponse.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/host.py
+
+*** Test Cases ***
+CreateHttpChannel
+    [Documentation]    parameters:
+    ...     \ \ httporhttps, channel_host, channel_port, channel_name, channel_source_protocol, channel_source, channel_source_port, stream_name, tenant_name, stream_rate, channel_capability=None, channel_factor=0.5, flash_slice=12, flash_delay=30, flash_interval=10
+    [Tags]    old_channel
+    ${response}    ChannelCreate    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    fengjing_20160427_test    http
+    ...    115.28.229.244    80    hls/fengjing.m3u8    wasu    2000    1000
+    ...    0.5    12    30    10
+    VerifyStatusCode    ${response}    200
+
+StartChannel
+    [Documentation]    parameters:
+    ...     \ \ httporhttps, channel_host, channel_port, channel_id, tenant_name
+    [Tags]    old_channel
+    ${response}    ChannelStart    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    B841462EF30748468E282F919C410F10    wasu
+    VerifyStatusCode    ${response}    200
+
+DeleteChannel
+    [Documentation]    parameters:
+    ...     \ \ httporhttps, channel_host, channel_port, channel_id, tenant_name
+    [Tags]    old_channel
+    ${response}    ChannelDelete    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    B841462EF30748468E282F919C410F10    wasu
+    VerifyStatusCode    ${response}    200

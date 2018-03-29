@@ -1,0 +1,8 @@
+{
+    "type":"record",
+    "name":"live_delete_channel",
+    "fields":[
+        {"name":"file_id","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

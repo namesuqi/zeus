@@ -1,0 +1,18 @@
+*** Settings ***
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+Library           ../../../lib/interface/ops/control_srv.py
+
+*** Test Cases ***
+login_ok
+    [Tags]    user login
+    ${response}    Ops User Login    ${HTTP}    ${CONTROL_SRV_HOST}    ${CONTROL_SRV_PORT}    ${USERNAME}    ${PASSWORD}
+    ${cookie}    Get Cookies Value    ${response}
+    log    ${cookie}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}

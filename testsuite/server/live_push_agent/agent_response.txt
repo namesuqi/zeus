@@ -1,0 +1,22 @@
+*** Settings ***
+Default Tags
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/live_push_agent/live_push_agent.py
+Variables         ../../../lib/interface/live_push_agent/const.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+TimeStamp
+    [Documentation]    目标：验证TimeStamp与服务器时间一致
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_CORRECT }    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+
+FileURL
+    [Documentation]    目标：验证返回的FileURL与发送的一致
+    [Tags]
+    ${response}    Get Live Push Status    ${HTTP}    ${LIVE_PUSH_AGENT_HOST}    ${LIVE_PUSH_AGENT_PORT}    ${URL_NOT_EXIST}    ${SECOND_3}
+    Status Code Should Be Equal    ${response}    200
+    ${response_body}    Get Response Data    ${response}
+    Log    ${response_body}

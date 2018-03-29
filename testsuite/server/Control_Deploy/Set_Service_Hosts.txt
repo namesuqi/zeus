@@ -1,0 +1,196 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_deploy.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+Library           ../../../lib/database/mysql_db.py
+Library           ../../../lib/database/mysql_handler.py
+
+*** Test Cases ***
+set_one_ok
+    [Documentation]    为某服务分配一台主机
+    ...    （host_id存在，服务存在时，且该host_id未被分配时，服务器应返回200和success，并更新数据库）
+    [Tags]    set service hosts
+    [Setup]    Run Keywords    Db Create Host Info    ${HOST_ID1_t}    ${IP1}    ${STATUS}    AND
+    ...    Db Delete Host Current Server    ${HOST_ID1_t}
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"success"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    success
+    [Teardown]    Run Keywords    Db Delete Host Info    ${HOST_ID1_t}    AND    Db Delete Host Current Server    ${HOST_ID1_t}
+
+set_one_no_service
+    [Documentation]    为某服务分配一台主机
+    ...    （host_id存在，服务不存在时，服务器应返回200和错误信息）
+    [Tags]    set service hosts
+    [Setup]    Run Keywords    Db Create Host Info    ${HOST_ID1_t}    ${IP1}    ${STATUS}    AND
+    ...    Db Delete Host Current Server    ${HOST_ID1_t}
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_NULL}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"servername Wrong"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    servername Wrong
+    [Teardown]    Run Keywords    Db Delete Host Info    ${HOST_ID1_t}    AND    Db Delete Host Current Server    ${HOST_ID1_t}
+
+set_one_no_host_id
+    [Documentation]    为某服务分配一台主机
+    ...    （host_id不存在，服务器应返回200和错误信息）
+    ...
+    ...
+    ...    目前尚未对host_id进行参数校验
+    ...
+    ...    所以执行完需要删除插入的记录
+    [Tags]    set service hosts
+    [Setup]
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    [Teardown]    Db Delete Host Current Server    ${HOST_ID1_t}
+
+set_one_host_id_exists
+    [Documentation]    为某服务分配一台主机
+    ...    （host_id存在，服务存在，且该host_id已被分配时，服务器应返回200和错误信息，并不会更新数据库）
+    [Tags]    set service hosts
+    [Setup]    Db Create Host Current Server    ${TRACKER_ROLE}    ${HOST_ID1_t}
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"Insert Error:Error 1062: Duplicate entry '3-666666' for key 'index_server_role_id_host_id'"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    Insert Error:Error 1062: Duplicate entry '3-666666' for key 'index_server_role_id_host_id'
+    [Teardown]    Db Delete Host Current Server    ${HOST_ID1_t}
+
+set_many_ok
+    [Documentation]    为某服务分配多台主机
+    ...    （host_id存在，服务存在时，且该host_id未被分配时，服务器应返回200和success，并更新数据库）
+    [Tags]    set service hosts
+    [Setup]    Run Keywords    Db Create Host Info    ${HOST_ID1_t}    ${IP1}    ${STATUS}    AND
+    ...    Db Delete Host Current Server    ${HOST_ID1_t}    AND    Db Create Host Info    ${HOST_ID1_t2}    ${IP2}
+    ...    ${STATUS}    AND    Db Delete Host Current Server    ${HOST_ID1_t2}
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOSTS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    [Teardown]    Run Keywords    Db Delete Host Info    ${HOST_ID1_t}    AND    Db Delete Host Current Server    ${HOST_ID1_t}
+    ...    AND    Db Delete Host Info    ${HOST_ID1_t2}    AND    Db Delete Host Current Server    ${HOST_ID1_t2}
+
+set_many_no_service
+    [Documentation]    为某服务分配多台主机
+    ...    （host_id存在（同时分配多个主机），服务不存在时，服务器应返回200和错误信息）
+    [Tags]    set service hosts
+    [Setup]    Run Keywords    Db Create Host Info    ${HOST_ID1_t}    ${IP1}    ${STATUS}    AND
+    ...    Db Delete Host Current Server    ${HOST_ID1_t}    AND    Db Create Host Info    ${HOST_ID1_t2}    ${IP2}
+    ...    ${STATUS}    AND    Db Delete Host Current Server    ${HOST_ID1_t2}
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_NULL}    ${HOSTS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"servername Wrong"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    servername Wrong
+    [Teardown]    Run Keywords    Db Delete Host Info    ${HOST_ID1_t}    AND    Db Delete Host Current Server    ${HOST_ID1_t}
+    ...    AND    Db Delete Host Info    ${HOST_ID1_t2}    AND    Db Delete Host Current Server    ${HOST_ID1_t2}
+
+set_many_no_hosts
+    [Documentation]    为某服务分配多台主机
+    ...    （host_id不存在（同时分配多个主机），服务器应返回200和错误信息）
+    ...
+    ...    目前尚未对host_id进行参数校验
+    ...
+    ...    所以执行完需要删除插入的记录
+    [Tags]    set service hosts
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOSTS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    [Teardown]    Run Keywords    Db Delete Host Current Server    ${HOST_ID1_t}    AND    Db Delete Host Current Server    ${HOST_ID1_t2}
+
+set_many_hosts_exist
+    [Documentation]    为某服务分配多台主机
+    ...    （host_id存在（同时分配多个主机），服务存在，且该host_id已被分配时，服务器应返回200和错误信息，并不会更新数据库）
+    [Tags]    set service hosts
+    [Setup]    Run Keywords    Db Create Host Current Server    ${TRACKER_ROLE}    ${HOST_ID1_t}    AND    Db Create Host Current Server
+    ...    ${TRACKER_ROLE}    ${HOST_ID1_t2}
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOSTS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"Insert Error:Error 1062: Duplicate entry '3-666666' for key 'index_server_role_id_host_id'"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    Insert Error:Error 1062: Duplicate entry '3-666666' for key 'index_server_role_id_host_id'
+    [Teardown]    Run Keywords    Db Delete Host Current Server    ${HOST_ID1_t}    AND    Db Delete Host Current Server    ${HOST_ID1_t2}
+
+set_service_hosts_mysql_disconnected
+    [Documentation]    数据库连接失败时，服务器应返回200和错误信息
+    [Tags]    set service hosts
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+set_host_null
+    [Documentation]    host_id为空时，服务器应返回200和错误信息
+    ...
+    ...    目前尚未对host_id的参数进行校验
+    [Tags]    set service hosts
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${HOST_NULL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"hostid Wrong"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    hostid Wrong
+
+set_service_null
+    [Documentation]    service为空时，服务器应返回200和错误信息
+    [Tags]    set service hosts
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_NULL}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"servername Wrong"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    servername Wrong
+
+set_param_error
+    [Documentation]    host_id字段格式错误时，如分配一台主机时，缺少中括号，服务器应返回200和错误信息
+    [Tags]    set service hosts
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_TRACKER}    ${PARAM_ERROR}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"json: cannot unmarshal string into Go value of type []string"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    json: cannot unmarshal string into Go value of type []string
+
+set_param_error2
+    [Tags]    set service hosts
+    ${response}    Set Service Hosts    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVICE_PARAM_ERROR}    ${HOST_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"json: cannot unmarshal array into Go value of type string"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    json: cannot unmarshal array into Go value of type string

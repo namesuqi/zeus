@@ -1,0 +1,41 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+ts_logout_ok
+    [Documentation]    目标：验证已登录peer能成功logout
+    [Tags]    ts_node    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Logout    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}
+
+ts_not_login
+    [Documentation]    目标：验证未登录peer进行logout时返回200{}，logout不校验节点是否login
+    ...    依赖：确保peer未登录 已登录的要退出
+    [Tags]    ts_node    regression
+    Peer Logout    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}
+    ${response}    Peer Logout    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_invalid_peer_id
+    [Documentation]    目标：验证使用无效的peer_id进行logout时，返回400
+    ...    依赖：peer_id无效
+    ...    peer_id是128位UUID，使用HEX编码
+    [Tags]    ts_node    regression
+    ${response}    Peer Logout    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}

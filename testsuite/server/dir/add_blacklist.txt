@@ -1,0 +1,33 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/business/Dir.py
+Library           ../../../lib/database/MysqlHandler.py
+Library           ../../../lib/database/mysqldb.py
+
+*** Test Cases ***
+AddOK
+    [Documentation]    目标：验证能够添加一个文件到黑名单列表
+    [Tags]
+    [Setup]
+    DbDeleteUserFile    2    /testblacklist.mp4
+    DbAddUserFile    2    /testblacklist.mp4    ${NEW_FILE_ID}    12    http://vod.cloutropy.com/testblacklist.mp4
+    DbDeleteBlacklist    2    /testblacklist.mp4
+    ${response}    DirAddBlacklist    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    http://vod.cloutropy.com/testblacklist.mp4
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    [Teardown]    RunKeywords    DbDeleteUserFile    2    /testblacklist.mp4    AND    DbDeleteBlacklist
+    ...    2    /testblacklist.mp4
+
+InvalidUrlPrefix
+    [Documentation]    目标：验证URL无效时，返回E_INVALID_URL_PREFIX
+    [Tags]
+    ${response}    DirAddBlacklist    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    invalid
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_INVALID_URL_PREFIX

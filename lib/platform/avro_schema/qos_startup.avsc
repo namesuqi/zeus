@@ -1,0 +1,14 @@
+{
+    "type":"record",
+    "name":"qos_startup",
+    "fields":[
+        {"name":"id","type":"string"},
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"play_type","type":"string"},
+        {"name":"url","type":"string"},
+        {"name":"vvid","type":"string"},
+        {"name":"duration","type":["null","long"],"default":null},
+        {"name":"public_ip","type":"string"}
+    ]
+}

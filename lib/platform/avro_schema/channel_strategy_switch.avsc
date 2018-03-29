@@ -1,0 +1,9 @@
+{
+    "type":"record",
+    "name":"channel_strategy_switch",
+    "fields":[
+        {"name":"file_id","type":"string"},
+        {"name":"timestamp","type":["null","long"],"default":null},
+        {"name":"switch","type":"boolean"}
+    ]
+}

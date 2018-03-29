@@ -1,0 +1,44 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_deploy.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+
+*** Test Cases ***
+get servers ok
+    [Documentation]    获取可部署的服务(数据库有多条记录时，服务器应返回200和所有的服务列表）
+    [Tags]    get all servers
+    ${response}    Get All Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+get no server
+    [Documentation]    获取可部署的服务(数据库中无可部署的服务，服务器应返回200和空列表）
+    [Tags]    get all servers
+    ${response}    Get All Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+get one server ok
+    [Documentation]    获取可部署的服务(数据库中只有一条可部署的服务记录时，服务器应返回200和该服务信息）
+    [Tags]    get all servers
+    ${response}    Get All Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+get servers error
+    [Documentation]    获取可部署的服务(数据库连接失败时，服务器应返回200和错误信息）
+    [Tags]    get all servers
+    ${response}    Get All Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}

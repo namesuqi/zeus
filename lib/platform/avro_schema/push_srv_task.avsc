@@ -1,0 +1,10 @@
+{
+    "type":"record",
+    "name":"push_srv_task",
+    "fields":[
+        {"name":"timestamp","type":"long"},
+        {"name":"file_id","type":"string"},
+        {"name":"operation","type":"string"},
+        {"name":"ttl","type":["null","string"],"default":null}
+    ]
+}

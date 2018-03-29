@@ -1,0 +1,114 @@
+*** Settings ***
+Default Tags
+Test Timeout      60 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           lib.interface.up.panel_server
+Library           lib.database.mysql_handler
+
+*** Test Cases ***
+bandwidth_download_ok
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+bandwidth_download_not_login
+    [Tags]    panel
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    live
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_LOGIN
+
+bandwidth_download_none_peer_prefix
+    [Tags]    panel
+    [Setup]    create account
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NONE_PEER_PREFIX
+    [Teardown]    delete account
+
+bandwidth_download_miss_start
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${EMPTY}    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+bandwidth_download_miss_end
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    ${EMPTY}
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+bandwidth_download_miss_step
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    ${EMPTY}    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+bandwidth_download_miss_type
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    ${EMPTY}    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+bandwidth_download_invalid_start
+    [Documentation]    如果传入参数类型不匹配，如本该传入Int和String。则返回404
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    INVALID_TIMESTAMP    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+bandwidth_download_invalid_end
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    INVALID_TIMESTAMP
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+bandwidth_download_invalid_step
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    INVALID_STEP    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+bandwidth_download_invalid_type
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth Download    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    INVALID_TYPE    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+*** Keywords ***
+Save Login Cookie
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    Save Cookies    ${res}    panel_login_cookie
+
+create account
+    ${username}    Evaluate    str('tester')
+    db_add_user_no_prefix    ${username}    123456
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    tester    123456
+    Save Cookies    ${res}    panel_login_cookie
+
+delete account
+    db_delete_user_no_prefix    tester

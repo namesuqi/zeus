@@ -1,0 +1,18 @@
+{
+    "type":"record",
+    "name":"heartbeat",
+    "fields":[
+        {"name":"peer_id","type":"string"},
+        {"name":"sdk_version","type":"string"},
+        {"name":"nat_type","type":"int"},
+        {"name":"public_ip","type":"string"},
+        {"name":"public_port","type":"int"},
+        {"name":"private_ip","type":"string"},
+        {"name":"private_port","type":"int"},
+        {"name":"country","type":["null","string"],"default":null},
+        {"name":"province_id","type":["null","string"],"default":null},
+        {"name":"city_id","type":["null","string"],"default":null},
+        {"name":"isp_id","type":["null","string"],"default":null},
+        {"name":"timestamp","type":"long"}
+    ]
+}

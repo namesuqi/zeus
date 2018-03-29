@@ -1,0 +1,18 @@
+*** Settings ***
+Library           ../../../lib/feature/srs_data_analyze/AnalyzeSrsData.py
+
+*** Variables ***
+
+*** Test Cases ***
+CreateFile
+    [Documentation]    注：运行该case前需要进入到lib/feature/srs_data_analyze/data.py文件中修改FILE_ID字段相关参数值
+    CreateFile
+
+Analyze File
+    [Documentation]    注：运行该case前需要进入到lib/feature/srs_data_analyze/data.py文件中修改FILE_ID字段相关参数值
+    AnalyzeFile
+
+DownloadFile
+    [Documentation]    注：运行该case前需要进入到lib/feature/srs_data_analyze/data.py文件中修改FILE_ID字段相关参数值
+    [Tags]
+    DownloadFile

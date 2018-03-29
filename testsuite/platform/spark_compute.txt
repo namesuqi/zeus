@@ -1,0 +1,72 @@
+*** Settings ***
+Library           lib.platform.dataprocess.spark_compute.make_data
+Library           lib.platform.dataprocess.spark_compute.compute
+Library           lib.platform.dataprocess.spark_compute.commontool.common_handler
+Library           lib.platform.dataprocess.spark_compute.commontool.compare_result_list.CompareResultList
+Variables         ../../lib/platform/dataprocess/spark_compute/test_data.py
+
+*** Test Cases ***
+five_minute_average_startup_delay
+    ${hour}    Evaluate    int("${now_hour}")
+    make data    QosStartUp    ${hour}
+    insert datafile to hdfs    qos_startup.txt
+    compute    FiveMinuteAverageStartupDelay
+    excute command    ${hadoop_ip }    ${hadoop_username }    ${hadoop_password }    /root/bounce/bin/start_test.sh FiveMinuteAverageStartupDelay
+    get data from hbase    scan 'output_five_minute_startup_delay'    five_minute_average_startup_delay.txt
+    ${result}    compare contain type    five_minute_average_startup_delay.txt
+    Should Be True    ${result}
+
+play_fluency
+    ${hour}    evaluate    int("${now_hour}")
+    make data    QosBufferingCount    ${hour}
+    make data    BDFlow    ${hour}
+    insert datafile to hdfs    qos_buffering_count.txt
+    insert datafile to hdfs    bd_flow.txt
+    compute    PlayFluency
+    excute command    ${hadoop_ip }    ${hadoop_username }    ${hadoop_password }    /root/bounce/bin/start_test.sh PlayFluency
+    get data from hbase    scan 'output_five_minute_buffering_ratio'    play_fluency.txt
+    ${result}    compare no type    play_fluency.txt
+    Should Be True    ${result}
+
+total_flow_hour_download
+    ${hour}    Evaluate    int("21")
+    ${partition_time }    Set Variable    ${test_day}${hour}
+    make data    DownloadFlow    ${hour}
+    make data    UploadFlow    ${hour}
+    insert datafile to hdfs    download_flow.txt
+    compute    TotalFlowHour    ${partition_time }
+    excute command    ${hadoop_ip }    ${hadoop_username }    ${hadoop_password }    /root/bounce/bin/start_test.sh TotalFlow ${partition_time }
+    get data from hbase    scan 'output_hour_flow',{COLUMN=>'download'}    total_flow_download.txt
+    ${result}    compare contain type    total_flow_download.txt
+    Should Be True    ${result}
+
+total_flow_hour_upload
+    [Documentation]    依赖于total_flow_hour_download
+    ${hour}    Evaluate    int("21")
+    ${partition_time}    Set Variable    ${test_day}${hour}
+    insert datafile to hdfs    upload_flow.txt
+    compute    TotalFlowHour    ${partition_time}
+    excute command    ${hadoop_ip }    ${hadoop_username }    ${hadoop_password }    /root/bounce/bin/start_test.sh TotalFlow ${partition_time}
+    get data from hbase    scan 'output_hour_flow',{COLUMN=>'upload'}    total_flow_upload.txt
+    ${result}    compare no type    total_flow_upload.txt
+    Should Be True    ${result}
+
+total_flow_day_download
+    ${partition_time }    Set Variable    ${test_day}
+    make data    DownloadFlow    ${hour}
+    make data    UploadFlow    ${hour}
+    insert datafile to hdfs    download_flow.txt
+    compute    TotalFlowHour    ${partition_time }
+    excute command    ${hadoop_ip }    ${hadoop_username }    ${hadoop_password }    /root/bounce/bin/start_test.sh TotalFlow ${partition_time }
+    get data from hbase    scan 'output_hour_flow',{COLUMN=>'download'}    total_flow_download.txt
+    ${result}    compare contain type    total_flow_download.txt
+    Should Be True    ${result}
+
+total_flow_day_upload
+    ${partition_time}    Set Variable    ${test_day}
+    insert datafile to hdfs    upload_flow.txt
+    compute    TotalFlowHour    ${partition_time}
+    excute command    ${hadoop_ip }    ${hadoop_username }    ${hadoop_password }    /root/bounce/bin/start_test.sh TotalFlow ${partition_time}
+    get data from hbase    scan 'output_hour_flow',{COLUMN=>'upload'}    total_flow_upload.txt
+    ${result}    compare no type    total_flow_upload.txt
+    Should Be True    ${result}

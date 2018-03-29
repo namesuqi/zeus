@@ -1,0 +1,43 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_deploy.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+
+*** Test Cases ***
+get_stun_go
+    [Documentation]    获取stun-go的可用版本（有该服务）
+    [Tags]    get archive version
+    ${response}    Get Archive Version    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${STUN_GO}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+get_archive_no_servername
+    [Documentation]    获取stun-go的可用版本（无该服务）
+    ...
+    ...    应返回200和错误信息
+    [Tags]    get archive version
+    ${response}    Get Archive Version    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVERNAME_NO}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"StatusCode from archive not 200:. 404"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    StatusCode from archive not 200:. 404
+
+get_archive_servername_null
+    [Documentation]    获取stun-go的可用版本（servername为空时）
+    ...
+    ...    应返回200和错误信息
+    [Tags]    get archive version
+    ${response}    Get Archive Version    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${SERVERNAME_NULL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"Wrong ServerName"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    Wrong ServerName

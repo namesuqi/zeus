@@ -1,0 +1,18 @@
+{
+    "type":"record",
+    "name":"bd_flow",
+    "fields":[
+        {"name":"id","type":"string"},
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"url","type":"string"},
+        {"name":"play_type","type":"string"},
+        {"name":"vvid","type":["null","string"],"default":null},
+        {"name":"duration","type":"long"},
+        {"name":"download","type":"long"},
+        {"name":"public_ip","type":"string"},
+        {"name":"input_time","type":"long"},
+        {"name":"sdk_agent_name","type":"string"},
+        {"name":"sdk_agent_version","type":"string"}
+    ]
+}

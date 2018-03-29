@@ -1,0 +1,56 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_VodPerCleaned_data
+    [Tags]    platform_test
+    createtabledata    VodPerCleaned
+
+DailyStartTimeCountJob_task
+    [Documentation]    prerequisite: VodPerformanceCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailyStartTimeCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyStartTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyStartTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyStartTimeCountJob['name']}    select peer_prefix, start_time, play_count, play_type from ${DailyStartTimeCountJob ['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+ThirtyDayStartTimeCountJob_task
+    [Documentation]    follow the job DailyStartTimeCountJob_task 补充说明：任务计算的是指定日期及之前30天所有数据
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${ThirtyDayStartTimeCountJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${ThirtyDayStartTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${ThirtyDayStartTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${ThirtyDayStartTimeCountJob['name']}    select peer_prefix, start_time, play_count, play_type from ${ThirtyDayStartTimeCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailySeekTimeCountJob_task
+    [Documentation]    prerequisite: VodPerformanceCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailySeekTimeCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailySeekTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailySeekTimeCountJob['name']}    select peer_prefix, seek_time, seek_count, play_type from ${DailySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+ThirtyDaySeekTimeCountJob_task
+    [Documentation]    follow the job DailySeekTimeCountJob_task 补充说明：任务计算的是指定日期及之前30天所有数据
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${ThirtyDaySeekTimeCountJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${ThirtyDaySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${ThirtyDaySeekTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${ThirtyDaySeekTimeCountJob['name']}    select peer_prefix, seek_time, seek_count, play_type from ${ThirtyDaySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}

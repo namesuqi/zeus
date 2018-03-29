@@ -1,0 +1,134 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/business/Dir.py
+Library           ../../../lib/database/MysqlHandler.py
+Library           ../../../lib/database/mysqldb.py
+
+*** Test Cases ***
+CreateOK
+    [Documentation]    目标：验证能够在指定用户名下注册一级域名，且该域名未被注册过
+    [Tags]
+    [Setup]    Run Keywords    DbDeletePrefix    ${NEW_CREATE_PREFIX}    AND    DbDeletePrefix    ${NEW_CREATE_PREFIX3}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${exists}    DbIsPrefixExists    ${NEW_CREATE_PREFIX}
+    Should Be True    ${exists}
+    [Teardown]    Run Keywords    DbDeletePrefix    ${NEW_CREATE_PREFIX}    AND    DbDeletePrefix    ${NEW_CREATE_PREFIX3}
+
+PrefixCreated
+    [Documentation]    目标：验证域名已被用户注册时，返回E_PREFIX_REGISTERED
+    [Tags]
+    [Setup]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX}    ${SOURCE_TYPE_CDN}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_PREFIX_REGISTERED
+    [Teardown]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+
+PrefixRegistered
+    [Documentation]    目标：验证用户1注册某域名后，用户2不能注册该域名
+    [Tags]
+    [Setup]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX}    ${SOURCE_TYPE_CDN}
+    ${exists}    DbIsPrefixExists    ${NEW_CREATE_PREFIX}
+    Should Be True    ${exists}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${NEW_CREATE_PREFIX}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_PREFIX_REGISTERED
+    [Teardown]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+
+InvalidUsername
+    [Documentation]    目标：验证用户名无效时，返回E_INVALID_USERNAME
+    [Tags]
+    [Setup]    Run Keywords    DbDeleteUser    INVALIDUSERNAME    AND    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    INVALIDUSERNAME    ${NEW_CREATE_PREFIX}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_INVALID_USERNAME
+    [Teardown]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+
+NoUsername
+    [Documentation]    目标：验证被注册的用户的username为空时，能够添加一个公共domain（一级域名，例:cdn.cloutropy.com）
+    [Tags]
+    [Setup]    DbDeletePrefix    ${COMMON_PREFIX}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    \    ${COMMON_PREFIX}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${exists}    DbIsPrefixExists    ${COMMON_PREFIX}
+    Should Be True    ${exists}
+    [Teardown]    DbDeletePrefix    ${COMMON_PREFIX}
+
+InvalidPrefix
+    [Documentation]    目标：验证域名无效时，返回E_INVALID_PREFIX
+    ...    说明：一级域名（如cdn.leigang.com）未被注册的情况下，二级域名（如cdn.leigang.com/leigang_cdn）无法注册，返回E_INVALID_PREFIX
+    [Tags]
+    [Setup]    Run Keywords    DbDeletePrefix    testcreate.com    AND    DbDeletePrefix    testcreate.com/leigang_prefix
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    testcreate.com/leigang_prefix
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_INVALID_PREFIX
+    [Teardown]    Run Keywords    DbDeletePrefix    testcreate.com    AND    DbDeletePrefix    testcreate.com/leigang_prefix
+
+NoPrefix
+    [Documentation]    目标：验证参数prefix缺失时，返回E_PARAM_MISSING
+    [Tags]
+    [Setup]
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${EMPTY}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_PARAM_MISSING
+    [Teardown]
+
+CreateInDomain
+    [Documentation]    目标：验证用户能以公共domain为一级域名，成功注册prefix；并且该用户注册该二级域名成功后，其他用户不能注册该二级域名
+    ...    如：testcreate.com为公共域名，用户1可以注册testcreate.com/leigang；用户1注册testcreate.com/leigang成功后，用户2则不能注册该二级域名
+    [Tags]
+    [Setup]    Run Keywords    DbDeletePrefix    testcreate.com    AND    DbDeletePrefix    testcreate.com/leigang
+    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    \    testcreate.com    ${SOURCE_TYPE_CDN}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    testcreate.com/leigang
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${exists}    DbIsPrefixExists    testcreate.com/leigang
+    Should Be True    ${exists}
+    ${response2}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    testcreate.com/leigang
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response2}    200
+    VerifyErrorCode    ${response2}    E_PREFIX_REGISTERED
+    [Teardown]    Run Keywords    DbDeletePrefix    testcreate.com    AND    DbDeletePrefix    testcreate.com/leigang
+
+InvalidSubdomain
+    [Documentation]    目标：验证用户不能注册以非公共域名为一级域名的二级域名
+    ...
+    ...    例：leigang.cloutropy.com不是公共域名，即使该域名为用户的一级域名，用户也不能注册leigang.cloutropy.com/leigang_cdn
+    [Tags]
+    [Setup]    Run Keywords    DbDeletePrefix    ${NEW_CREATE_PREFIX}    AND    DbDeletePrefix    ${NEW_CREATE_PREFIX2}
+    ${response}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX2}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_INVALID_PREFIX
+    ${exists}    DbIsPrefixExists    ${NEW_CREATE_PREFIX2}
+    Should Not Be True    ${exists}
+    Comment    在用户注册一级域名后注册二级域名
+    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX}    ${SOURCE_TYPE_CDN}
+    ${exists2}    DbIsPrefixExists    ${NEW_CREATE_PREFIX}
+    Should Be True    ${exists2}
+    ${response2}    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX2}
+    ...    ${SOURCE_TYPE_CDN}
+    VerifyStatusCode    ${response2}    200
+    VerifyErrorCode    ${response2}    E_INVALID_PREFIX
+    ${exists3}    DbIsPrefixExists    ${NEW_CREATE_PREFIX2}
+    Should Not Be True    ${exists3}
+    [Teardown]    Run Keywords    DbDeletePrefix    ${NEW_CREATE_PREFIX}    AND    DbDeletePrefix    ${NEW_CREATE_PREFIX2}

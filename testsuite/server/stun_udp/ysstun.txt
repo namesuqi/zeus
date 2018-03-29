@@ -1,0 +1,380 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/stun_udp.py
+Variables         ../../../lib/constant/host.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/stun_udp_req.py
+Library           ../../../lib/database/redis_handler.py
+Library           Collections
+
+*** Test Cases ***
+sdk_query_type_req
+    [Documentation]    目标：验证同时向stun的9000和9002端口发送quer_type_req，stun会返回相应信息（step, pub_ip, pub_port)
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req    ${STUN_HOST}    ${STUN_PORT}    ${STEP1}    ${LISTENING_PORT}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    List Should Contain Value    ${1,3}    @{rsp_data}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data}[0]    ${STEP1}
+    Should Be Equal As Strings    @{rsp_data}[1]    ${LISTENING_PORT}
+    ${response2}    sdk_query_type_req    ${STUN_HOST}    ${STUN_PORT2}    ${STEP2}    ${LISTENING_PORT}
+    @{rsp_data2}    parse_stun_rsp_data    ${response2}
+    List Should Contain Value    ${2,4}    @{rsp_data2}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data2}[0]    ${STEP2}
+    Should Be Equal As Strings    @{rsp_data2}[1]    ${LISTENING_PORT}
+
+sdk_query_type_req_9000_wrong_step
+    [Documentation]    目标：验证同时向stun的9000端口发送quer_type_req，含有错误step
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req    ${STUN_HOST}    ${STUN_PORT}    ${STEP3}    ${LISTENING_PORT}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    #Should Be Equal As Strings    @{rsp_data}    None
+    Should Not Be Empty    ${response}
+    Length Should Be    ${response}    18
+
+sdk_query_type_req_9002_wrong_step
+    [Documentation]    目标：验证同时向stun的9002端口发送quer_type_req，含有错误step
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req    ${STUN_HOST}    ${STUN_PORT2}    ${STEP3}    ${LISTENING_PORT}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    #Should Be Equal As Strings    @{rsp_data}    None
+    Should Not Be Empty    ${response}
+    Length Should Be    ${response}    18
+
+sdk_query_type_req_9000_extra_long
+    [Documentation]    目标:验证向stun的9000端口发送超长的报文请求
+    [Tags]    stun_wait
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN_HOST}    ${STUN_PORT}    ${LONG_STEP}    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9000_lack_long
+    [Documentation]    目标：验证向stun的9000端口发送长度不足的报文请求
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN_HOST}    ${STUN_PORT}    \    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9002_extra_long
+    [Documentation]    目标：验证向stun的9002端口发送超长的报文请求
+    [Tags]    stun_wait
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN_HOST}    ${STUN_PORT2}    ${LONG_STEP}    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9002_lack_long
+    [Documentation]    目标：验证向stun的9002端口发送长度不足的报文请求
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN_HOST}    ${STUN_PORT2}    \    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9000_invalid
+    [Documentation]    目标：向stun发送相应报文后再向其发送req，验证其还能正常工作
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${w_response}    stun_query_type_rsp    ${STUN_HOST}    ${STUN_PORT}    ${PUB_IP}    ${PUB_PORT}
+    Should Be Equal As Strings    ${w_response}    None
+    ${response}    sdk_query_type_req    ${STUN_HOST}    ${STUN_PORT}    ${STEP1}    ${LISTENING_PORT}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    List Should Contain Value    ${1,3}    @{rsp_data}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data}[0]    ${STEP1}
+    Should Be Equal As Strings    @{rsp_data}[1]    ${LISTENING_PORT}
+
+sdk_query_type_req_9002_invalid
+    [Documentation]    目标：向stun发送相应报文后再向其发送req，验证其还能正常工作
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${w_response2}    stun_query_type_rsp    ${STUN_HOST}    ${STUN_PORT2}    ${PUB_IP}    ${PUB_PORT}
+    Should Be Equal As Strings    ${w_response2}    None
+    ${response2}    sdk_query_type_req    ${STUN_HOST}    ${STUN_PORT2}    ${STEP2}    ${LISTENING_PORT}
+    @{rsp_data2}    parse_stun_rsp_data    ${response2}
+    List Should Contain Value    ${2,4}    @{rsp_data2}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data2}[0]    ${STEP2}
+    Should Be Equal As Strings    @{rsp_data2}[1]    ${LISTENING_PORT}
+
+sdk_nat_update_req
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，stun会返回相应的信息（code, timestamp）
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_wrong_peer_id
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，含有错误的peer_id
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID2}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_wrong_nat_type
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，含有错误的nat_type
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID}    ${WRONG_NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_wrong_pri_ip
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，含有错误的pri_ip
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${WRONG_PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_extra_long
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，报文长度超长
+    [Tags]    stun_wait
+    [Setup]
+    ${response}    sdk_nat_update_req_indefinite    ${STUN_HOST}    ${STUN_PORT}    ${LONG_PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_nat_update_req_lack_long
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，报文长度不足
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req_indefinite    ${STUN_HOST}    ${STUN_PORT}    \    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_nat_update_req_invalid
+    [Documentation]    目标：向stun的9000端口发送nat_update_rsp后，再发送nat_update_req验证能够正常工作
+    [Tags]    stun_udp    stun
+    [Setup]
+    ${w_response}    stun_nat_update_rsp    ${STUN_HOST}    ${STUN_PORT}    0    ${LISTENING_PORT}
+    Should Be Equal As Strings    ${w_response}    None
+    ${response}    sdk_nat_update_req    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_quit
+    [Documentation]    目标：验证向stun的9000端口发送nat_quit
+    [Tags]    stun_udp    stun
+    [Setup]    add_stun_peer    ${PEER_ID}    ${PUB_IP}    ${PUB_PORT}    ${PRI_IP}    ${PRI_PORT}
+    ...    ${NAT_TYPE}
+    ${response}    sdk_nat_quit    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID}    ${LISTENING_PORT}
+    ${result}    get_stun_peer    ${PEER_ID}
+    Should Be Equal As Strings    ${result}    None
+
+sdk_nat_quit_wrong_peer_id
+    [Documentation]    目标：验证向stun的9000端口发送nat_quit，含有错误的peer_id
+    [Tags]    stun_udp    stun
+    [Setup]    add_stun_peer    ${PEER_ID3}    ${PUB_IP}    ${PUB_PORT}    ${PRI_IP}    ${PRI_PORT}
+    ...    ${NAT_TYPE}
+    ${response}    sdk_nat_quit    ${STUN_HOST}    ${STUN_PORT}    ${PEER_ID3}    ${LISTENING_PORT}
+    ${result}    get_stun_peer    ${PEER_ID3}
+    Should Not Be Empty    ${result}
+
+sdk_nat_quit_extra_long
+    [Documentation]    目标：验证向stun的9000端口发送nat_quit，报文长度超长
+    [Tags]    stun_wait
+    [Setup]    add_stun_peer    ${LONG_PEER_ID}    ${PUB_IP}    ${PUB_PORT}    ${PRI_IP}    ${PRI_PORT}
+    ...    ${NAT_TYPE}
+    ${response}    sdk_nat_quit    ${STUN_HOST}    ${STUN_PORT}    ${LONG_PEER_ID}    ${LISTENING_PORT}
+    ${result}    get_stun_peer    ${LONG_PEER_ID}
+    Should Not Be Empty    ${result}
+
+sdk_nat_quit_lack_long
+    [Documentation]    目标：验证向stun的9000端口发送nat_quit，报文长度不足
+    [Tags]    stun_udp    stun
+    [Setup]    add_stun_peer    ${PEER_ID}    ${PUB_IP}    ${PUB_PORT}    ${PRI_IP}    ${PRI_PORT}
+    ...    ${NAT_TYPE}
+    ${response}    sdk_nat_quit    ${STUN_HOST}    ${STUN_PORT}    \    ${LISTENING_PORT}
+    ${result}    get_stun_peer    ${PEER_ID}
+    Should Not Be Empty    ${result}
+
+sdk_query_type_req_cs
+    [Documentation]    目标：验证同时向stun的9000和9002端口发送quer_type_req，stun会返回相应信息（step, pub_ip, pub_port)
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req    ${STUN2_HOST}    ${STUN_PORT}    ${STEP1}    ${LISTENING_PORT}    ${True}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    List Should Contain Value    ${1,3}    @{rsp_data}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data}[0]    ${STEP1}
+    Should Be Equal As Strings    @{rsp_data}[1]    ${LISTENING_PORT}
+    ${response2}    sdk_query_type_req    ${STUN2_HOST}    ${STUN_PORT2}    ${STEP2}    ${LISTENING_PORT}    ${True}
+    @{rsp_data2}    parse_stun_rsp_data    ${response2}
+    List Should Contain Value    ${2,4}    @{rsp_data2}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data2}[0]    ${STEP2}
+    Should Be Equal As Strings    @{rsp_data2}[1]    ${LISTENING_PORT}
+
+sdk_query_type_req_9000_wrong_step_cs
+    [Documentation]    目标：验证同时向stun的9000端口发送quer_type_req，含有错误step
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req    ${STUN2_HOST}    ${STUN_PORT}    ${STEP3}    ${LISTENING_PORT}    ${True}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    #Should Be Equal As Strings    @{rsp_data}    None
+    Should Not Be Empty    ${response}
+    Length Should Be    ${response}    22
+
+sdk_query_type_req_9002_wrong_step_cs
+    [Documentation]    目标：验证同时向stun的9002端口发送quer_type_req，含有错误step
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req    ${STUN2_HOST}    ${STUN_PORT2}    ${STEP3}    ${LISTENING_PORT}    ${True}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    #Should Be Equal As Strings    @{rsp_data}    None
+    Should Not Be Empty    ${response}
+    Length Should Be    ${response}    22
+
+sdk_query_type_req_9000_data_overlong_cs
+    [Documentation]    目标:验证向stun的9000端口发送超长的报文请求
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN2_HOST}    ${STUN_PORT}    ${LONG_STEP}    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9000_data_shortage_cs
+    [Documentation]    目标：验证向stun的9000端口发送长度不足的报文请求
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN2_HOST}    ${STUN_PORT}    \    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9002_data_overlong_cs
+    [Documentation]    目标：验证向stun的9002端口发送超长的报文请求
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN2_HOST}    ${STUN_PORT2}    ${LONG_STEP}    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9002_data_shortage_cs
+    [Documentation]    目标：验证向stun的9002端口发送长度不足的报文请求
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_query_type_req_indefinite    ${STUN2_HOST}    ${STUN_PORT2}    \    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_query_type_req_9000_invalid_cs
+    [Documentation]    目标：向stun发送相应报文后再向其发送req，验证其还能正常工作
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${w_response}    stun_query_type_rsp    ${STUN2_HOST}    ${STUN_PORT}    ${PUB_IP}    ${PUB_PORT}    ${STEP1}
+    ...    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${w_response}    None
+    ${response}    sdk_query_type_req    ${STUN2_HOST}    ${STUN_PORT}    ${STEP1}    ${LISTENING_PORT}    ${True}
+    @{rsp_data}    parse_stun_rsp_data    ${response}
+    List Should Contain Value    ${1,3}    @{rsp_data}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data}[0]    ${STEP1}
+    Should Be Equal As Strings    @{rsp_data}[1]    ${LISTENING_PORT}
+
+sdk_query_type_req_9002_invalid_cs
+    [Documentation]    目标：向stun发送相应报文后再向其发送req，验证其还能正常工作
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${w_response2}    stun_query_type_rsp    ${STUN2_HOST}    ${STUN_PORT2}    ${PUB_IP}    ${PUB_PORT}    ${STEP1}
+    ...    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${w_response2}    None
+    ${response2}    sdk_query_type_req    ${STUN2_HOST}    ${STUN_PORT2}    ${STEP2}    ${LISTENING_PORT}    ${True}
+    @{rsp_data2}    parse_stun_rsp_data    ${response2}
+    List Should Contain Value    ${2,4}    @{rsp_data2}[0]
+    Comment    Should Be Equal As Strings    @{rsp_data2}[0]    ${STEP2}
+    Should Be Equal As Strings    @{rsp_data2}[1]    ${LISTENING_PORT}
+
+sdk_nat_update_req_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，stun会返回相应的信息（code, timestamp）
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_wrong_peer_id_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，含有错误的peer_id
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID2}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_wrong_nat_type_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，含有错误的nat_type
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${WRONG_NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_update_req_wrong_pri_ip_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，含有错误的pri_ip
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${WRONG_PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    #${rsp_code}    parse_stun_rsp_data    ${response}
+    #Should Be Equal As Strings    ${rsp_code}    0
+    Should Be Equal As Strings    ${response}    None
+
+sdk_nat_update_req_data_overlong_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，报文长度超长
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req_indefinite    ${STUN2_HOST}    ${STUN_PORT}    ${LONG_PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_nat_update_req_data_shortage_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req，报文长度不足
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response}    sdk_nat_update_req_indefinite    ${STUN2_HOST}    ${STUN_PORT}    \    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response}    None
+
+sdk_nat_update_req_invalid_cs
+    [Documentation]    目标：向stun的9000端口发送nat_update_rsp后，再发送nat_update_req验证能够正常工作
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${w_response}    stun_nat_update_rsp    ${STUN2_HOST}    ${STUN_PORT}    0    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${w_response}    None
+    ${response}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    0
+
+sdk_nat_quit_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_quit（stun-go 去除redis-single）
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response_update}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code_update}    parse_stun_rsp_data    ${response_update}
+    Should Be Equal As Strings    ${rsp_code_update}    0
+    ${response_quit}    sdk_nat_quit    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response_quit}    None
+    ${response_query}    sdk_pene_query_peer_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${LISTENING_PORT}    ${True}
+    @{rsp_data}    Parse Stun Rsp Data    ${response_query}
+    Should Be Equal As Strings    @{rsp_data}[0]    ${PEER_ID}
+    Should Be Equal As Strings    @{rsp_data}[1]    06000000000000000000000000
+
+sdk_nat_quit_wrong_peer_id_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_quit，含有错误的peer_id
+    [Tags]    stun2_udp    stun
+    [Setup]
+    ${response_update}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID2}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code_update}    parse_stun_rsp_data    ${response_update}
+    Should Be Equal As Strings    ${rsp_code_update}    0
+    ${response_quit}    sdk_nat_quit    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID2}    ${LISTENING_PORT}    ${True}
+    Should Be Equal As Strings    ${response_quit}    None
+    ${response_query}    sdk_pene_query_peer_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID2}    ${LISTENING_PORT}    ${True}
+    @{rsp_data}    Parse Stun Rsp Data    ${response_query}
+    Should Be Equal As Strings    @{rsp_data}[0]    ${PEER_ID2}
+    Should Be Equal As Strings    @{rsp_data}[1]    06000000000000000000000000

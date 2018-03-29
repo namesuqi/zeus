@@ -1,0 +1,41 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+search_ok
+    [Documentation]    目标:验证能够根据有效fileid获取文件信息
+    [Tags]    dir    regression    api
+    ${response}    Dir Search By File Id    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${CIWEN_FILE_ID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Fid    ${CIWEN_FILE_ID}
+    ${size}    Get Field Value    ${response}    size
+    Should Be Equal    ${size}    @{FileInfo}[0]
+    ${md5}    Get Field Value    ${response}    md5
+    Should Be Equal    ${md5}    @{FileInfo}[1]
+    ${source_url}    Get Field Value    ${response}    source_url
+    Should Be Equal    ${source_url}    @{FileInfo}[2]
+
+search_invalid_fileId
+    [Documentation]    目标:验证FileId无效时，返回E_FILE_NON_EXISTS
+    [Tags]    dir    regression    api
+    ${response}    Dir Search By File Id    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${INVALID_FILE_ID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FILE_NON_EXISTS
+
+search_no_fileId
+    [Documentation]    目标:验证不输入FileId时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Search By File Id    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING

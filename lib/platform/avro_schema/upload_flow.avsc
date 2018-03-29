@@ -1,0 +1,17 @@
+{
+    "type":"record",
+    "name":"upload_flow",
+    "fields":[
+        {"name":"id","type":"string"},
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"play_type","type":["null","string"],"default":null},
+        {"name":"duration","type":"long"},
+        {"name":"upload","type":"long"},
+        {"name":"public_ip","type":"string"},
+        {"name":"country","type":["null","string"],"default":null},
+        {"name":"province_id","type":["null","string"],"default":null},
+        {"name":"city_id","type":["null","string"],"default":null},
+        {"name":"isp_id","type":["null","string"],"default":null}
+    ]
+}

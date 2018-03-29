@@ -1,0 +1,235 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/channel_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/channel_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+Library           ../../../lib/database/redis_handler.py
+
+*** Test Cases ***
+start_live_flv_pid_empty
+    [Documentation]    目标：验证当pid为空时, Channel-srv会返回400
+    [Tags]    channel    regression    api
+    [Setup]
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${EMPTY}
+    ...    ${URL_REDIS}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    [Teardown]
+
+start_live_flv_pid_not_login
+    [Documentation]    目标：验证当pid不在线时, Channel-srv会返回200和文件信息(暂时只对pid的格式做检验)
+    ...
+    ...    前提 : redis中有该信息
+    [Tags]    channel    regression    api
+    [Setup]
+    @{file_info}    Operate File Url    add    ${URL_REDIS}    ${URL_REDIS_FILE_ID}    ${USER_LIVE}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_REDIS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal    ${file_url}    @{file_info}[1]
+    [Teardown]
+
+start_live_flv_pid_invalid
+    [Documentation]    目标：验证当pid非法时, Channel-srv会返回400
+    [Tags]    channel    regression    api
+    [Setup]
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID_INVAILD}
+    ...    ${URL_REDIS}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_FORMAT_INCORRECT
+    [Teardown]
+
+start_live_flv_user_empty
+    [Documentation]    目标：验证当user为空时, Channel-srv会返回400
+    [Tags]    channel    regression    api
+    [Setup]
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    \    ${PID}
+    ...    ${URL_REDIS}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    [Teardown]
+
+start_live_flv_url_empty
+    [Documentation]    目标：验证当url为空时, Channel-srv会返回400
+    [Tags]    channel    regression    api
+    [Setup]
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    [Teardown]
+
+start_live_flv_url_invalid
+    [Documentation]    目标：验证当url非法(非"http://…/..."的格式)时, Channel-srv会返回200 E_NOT_FOUND
+    [Tags]    channel    regression    api
+    [Setup]
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_INVAILD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_FOUND
+    ${file_info}    Operate File Url    get    ${URL_INVAILD}
+    Should Be Equal As Strings    ${file_info}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None
+    [Teardown]
+
+start_live_key_exist
+    [Documentation]    目标：验证当redis中有该频道key时，且user与tenant一致时, Channel-srv直接返回200和文件信息
+    ...
+    ...    前提 : redis中有该信息
+    [Tags]    channel    regression    api
+    [Setup]
+    @{file_info}    Operate File Url    add    ${URL_REDIS}    ${URL_REDIS_FILE_ID}    ${USER_LIVE}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_REDIS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal    ${file_url}    @{file_info}[1]
+    [Teardown]
+
+start_live_flv_ok
+    [Documentation]    目标：验证当redis中没有该频道信息, 但MySQL中有, 且user与url对应的tenant一致时, Channel-srv将信息写进redis中,并返回200和正确的信息
+    ...
+    ...    前提 : redis中没有该信息而mysql中有
+    ...
+    ...    注意 : 检验写入redis的信息, 并在用例执行后清除信息
+    [Tags]    channel    regression    api
+    [Setup]    Operate File Url    del    ${URL_MYSQL}
+    Comment    Operate File Url    del    ${URL_MYSQL}
+    @{file_info_mysql}    Db Get Info By Output Url    ${URL_MYSQL}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_MYSQL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info_redis}    Operate File Url    get    ${URL_MYSQL}
+    Should Be Equal As Strings    @{file_info_mysql}[0]    @{file_info_redis}[0]
+    Should Be Equal As Strings    @{file_info_mysql}[1]    @{file_info_redis}[1]
+    Should Be Equal As Strings    ${USER_LIVE}    @{file_info_redis}[2]
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    @{file_info_mysql}[0]
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal As Strings    ${file_url}    @{file_info_mysql}[1]
+    Comment    Operate File Url    del    ${URL_MYSQL}
+    [Teardown]    Operate File Url    del    ${URL_MYSQL}
+
+start_live_flv_auth_failed1
+    [Documentation]    目标：验证当redis中有该频道key时，且user与tenant不一致时, Channel-srv直接返回200 E_AUTH_FAILED
+    ...
+    ...    前提 : redis中有该信息
+    [Tags]    channel_old    regression    api
+    [Setup]
+    Operate File Url    add    ${URL_REDIS}    ${URL_REDIS_FILE_ID}    ${USER_LIVE}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_THUNDER}    ${PID}
+    ...    ${URL_REDIS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None
+    [Teardown]
+
+start_live_flv_auth_failed2
+    [Documentation]    目标：验证当redis中没有该频道信息, 但MySQL中有, 且user与url对应的tenant不一致时, \ Channel-srv将信息写进redis中,并返回200 E_AUTH_FAILED
+    ...
+    ...    前提 : redis中没有该信息而mysql中有
+    ...
+    ...    注意 : 检验写入redis的信息, 并在用例执行后清除信息
+    [Tags]    channel_old    regression    api
+    [Setup]
+    Operate File Url    del    ${URL_MYSQL}
+    @{file_info_mysql}    Db Get Info By Output Url    ${URL_MYSQL}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_THUNDER}    ${PID}
+    ...    ${URL_MYSQL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    @{file_info_redis}    Operate File Url    get    ${URL_MYSQL}
+    Should Be Equal As Strings    @{file_info_mysql}[0]    @{file_info_redis}[0]
+    Should Be Equal As Strings    @{file_info_mysql}[1]    @{file_info_redis}[1]
+    Should Be Equal As Strings    ${USER_LIVE}    @{file_info_redis}[2]
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None
+    Operate File Url    del    ${URL_MYSQL}
+    [Teardown]
+
+start_live_flv_url_not_exist
+    [Documentation]    目标：验证当redis和MySQL中都没有该频道信息, 且url域名对应的tenant不存在时, Channel-srv返回200 E_AUTH_FAILED
+    ...
+    ...    前提 : redis和mysql中都没有该信息
+    ...
+    ...    注意 : 确认没有写进信息
+    [Tags]    channel    regression    api
+    [Setup]
+    Operate File Url    del    ${URL_NOT_OURS}
+    Db Delete Flv By Url    ${URL_NOT_OURS}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_NOT_OURS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_info_redis}    Operate File Url    get    ${URL_NOT_OURS}
+    Should Be Equal As Strings    ${file_info_redis}    None
+    ${file_info_mysql}    Db Get Info By Output Url    ${URL_NOT_OURS}
+    Should Be Empty    ${file_info_mysql}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None
+    [Teardown]
+
+start_live_flv_url_register1
+    [Documentation]    目标：验证当redis和MySQL中都没有该频道信息, 且user与url域名对应的tenant一致时, Channel-mgr注册信息到MySQL中, Channel-srv将信息写进redis中, 并返回200和该文件信息
+    ...
+    ...    前提 : redis和mysql中都没有该信息
+    ...
+    ...    注意 : 确认有写进信息, 并在用例执行后清除信息
+    [Tags]    channel    regression    api
+    [Setup]
+    Operate File Url    del    ${URL_UNREG}
+    Db Delete Flv By Url    ${URL_UNREG}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_UNREG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info_mysql}    Db Get Info By Output Url    ${URL_UNREG}
+    @{file_info_redis}    Operate File Url    get    ${URL_UNREG}
+    Should Be Equal As Strings    @{file_info_mysql}[0]    @{file_info_redis}[0]
+    Should Be Equal As Strings    @{file_info_mysql}[1]    @{file_info_redis}[1]
+    Should Be Equal As Strings    ${USER_LIVE}    @{file_info_redis}[2]
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    @{file_info_mysql}[0]
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal As Strings    ${file_url}    @{file_info_mysql}[1]
+    Db Delete Flv By Url    ${URL_UNREG}
+    Operate File Url    del    ${URL_UNREG}
+    [Teardown]
+
+start_live_flv_url_register2
+    [Documentation]    目标：验证当redis和MySQL中都没有该频道信息, 且user与url域名对应的tenant不一致时, MySQL和redis中都不写入信息, Channel-srv返回200 E_AUTH_FAILED
+    ...
+    ...    前提 : redis和mysql中都没有该信息
+    ...
+    ...    注意 : 确认没有写进信息
+    [Tags]    channel    regression    api
+    [Setup]
+    Operate File Url    del    ${URL_UNREG}
+    Db Delete Flv By Url    ${URL_UNREG}
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_THUNDER}    ${PID}
+    ...    ${URL_UNREG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_info_redis}    Operate File Url    get    ${URL_UNREG}
+    Should Be Equal As Strings    ${file_info_redis}    None
+    ${file_info_mysql}    Db Get Info By Output Url    ${URL_UNREG}
+    Should Be Empty    ${file_info_mysql}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None
+    [Teardown]

@@ -1,0 +1,15 @@
+*** Settings ***
+Library           ../../../lib/feature/live_push_perf/ForThreads.py
+
+*** Test Cases ***
+for_one_g
+    [Tags]    for_one_g
+    CreateOneG
+
+for_five_g
+    [Tags]    for_five_g
+    CreateFiveG
+
+for_ten_g
+    [Tags]    for_ten_g
+    CreateTenG

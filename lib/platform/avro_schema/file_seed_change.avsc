@@ -1,0 +1,12 @@
+{
+    "type":"record",
+    "name":"file_seed_change",
+    "fields":[
+        {"name":"peer_id","type":"string"},
+        {"name":"file_id","type":"string"},
+        {"name":"operation","type":"string"},
+        {"name":"slice_map","type":"string"},
+        {"name":"cppc","type":"long"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

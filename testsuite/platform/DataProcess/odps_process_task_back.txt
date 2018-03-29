@@ -1,0 +1,760 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+
+*** Test Cases ***
+prepare_case_environment
+    [Tags]    platform_testpre
+    ${result}    gitpullcode    ${folderpath}
+    Should Be True    ${result}
+    ${result}    mvnpackage    ${folderpath}
+    Should Be True    ${result}
+    ${result}    uploadjartoodps    ${folderpath}    ${commandpath}
+    Should Be True    ${result}
+
+cleanalltxt
+    [Tags]    platform_testpre
+    cleardatafile    testdata
+    cleardatafile    inputdata
+    cleardatafile    outputdata
+
+create_all_data
+    [Tags]    platform_testpre
+    createalldata
+
+create_DownloadFlowCleaned_data
+    [Tags]    platform_test
+    createtabledata    DownloadFlowCleaned
+
+create_ClientExceptionCleaned_data
+    [Tags]    platform_test
+    createtabledata    ClientExceptionCleaned
+
+create_FileOnDemandCleaned_data
+    [Tags]    platform_test
+    createtabledata    FileOnDemandCleaned
+
+create_LiveProgressCleaned_data
+    [Tags]    platform_test
+    createtabledata    LiveProgressCleaned
+
+create_PeerOnlineTimeCleaned_data
+    [Tags]    platform_test
+    createtabledata    PeerOnlineTimeCleaned
+
+create_QosBufferingCleaned_data
+    [Tags]    platform_test
+    createtabledata    QosBufferingCleaned
+
+create_UploadFlowCleaned_data
+    [Tags]    platform_test
+    createtabledata    UploadFlowCleaned
+
+create_VodPerCleaned_data
+    [Tags]    platform_test
+    createtabledata    VodPerCleaned
+
+create_PeerInfoCleaned_data
+    [Tags]    platform_test
+    createtabledata    PeerInfoCleaned
+
+create_RawClientException_data
+    [Tags]    platform_test    raw
+    createtabledata    RawClientException
+
+create_RawDownloadFlow_data
+    [Tags]    platform_test    raw
+    createtabledata    RawDownloadFlow
+
+create_RawFileOnDemand_data
+    [Tags]    platform_test    raw
+    createtabledata    RawFileOnDemand
+
+create_RawLiveProgress_data
+    [Tags]    raw    platform_test
+    createtabledata    RawLiveProgress
+
+create_RawPeerInfo_data
+    [Tags]    platform_test    raw
+    createtabledata    RawPeerInfo
+
+create_RawPeerOnlineTime_data
+    [Tags]    platform_test    raw
+    createtabledata    RawPeerOnlineTime
+
+create_RawQosBuffering_data
+    [Tags]    raw    platform_test
+    createtabledata    RawQosBuffering
+
+create_RawUploadFlow_data
+    [Tags]    platform_test    raw
+    createtabledata    RawUploadFlow
+
+create_RawVodPerformance_data
+    [Tags]    platform_test    raw
+    createtabledata    RawVodPerformance
+
+create_RawLiveDelay_data
+    [Tags]    platform_test    raw
+    createtabledata    RawLiveDelay
+
+HourPlayCountJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${HourPlayCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourPlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${HourPlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourPlayCountJob['name']}    select peer_prefix, hour_time, play_count, play_type from ${HourPlayCountJob ['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailyPlayCountJob_task
+    [Documentation]    follow the job HourPlayCount
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyPlayCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyPlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyPlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyPlayCountJob['name']}    select peer_prefix, play_count, play_type from ${DailyPlayCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+PeerHourPlayCountJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${PeerHourPlayCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${PeerHourPlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${PeerHourPlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${PeerHourPlayCountJob['name']}    select peer_id, hour_time, play_count, play_type from ${PeerHourPlayCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+PeerDailyPlayCountJob_task
+    [Documentation]    follow the job PeerHourPlayCount
+    [Tags]    platform_task
+    @{varlist}    Create List    hour=true    export=true
+    createjobexpecteddata    ${PeerDailyPlayCountJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${PeerDailyPlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${PeerDailyPlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${PeerDailyPlayCountJob['name']}    select peer_id, play_count, play_type from ${PeerDailyPlayCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+ISPProvinceParseJob_task
+    [Documentation]    prerequisite: PeerInfoCleaned_data created
+    [Tags]    platform_task    distinct
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${ISPProvinceParseJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${ISPProvinceParseJob['mysqltable']}
+    startodpsjob    ${workpath}    ${ISPProvinceParseJob['name']}    ${varlist}
+    downloaddatafromodps    ${ISPProvinceParseJob['outputtable']}    /outputdata/${ISPProvinceParseJob['name']}ODPS.txt
+    ${re}    compareresultodps    ${ISPProvinceParseJob['name']}
+    Should Be True    ${re}
+    ${re}    compareresultlinenumbermysql    ${ISPProvinceParseJob['name']}    select yunshang_core, ip, mac, os_version, cpu, province, isp_id, os_type from ${ISPProvinceParseJob['mysqltable']}
+    Should Be True    ${re}
+
+PeerInfoRecordingJob_task
+    [Documentation]    follow the job ISPProvinceParse
+    [Tags]    odps    platform_task
+    createjobexpecteddata    ${PeerInfoRecordingJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${PeerInfoRecordingJob['name']}
+    downloaddatafromodps    ${PeerInfoRecordingJob['outputtable']}    /outputdata/${PeerInfoRecordingJob['name']}DB.txt
+    ${re}    compareresult    ${PeerInfoRecordingJob['name']}
+    Should Be True    ${re}
+
+TotalPeerCountJob_task
+    [Documentation]    follow the job PeerInfoRecording
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${TotalPeerCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TotalPeerCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${TotalPeerCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${TotalPeerCountJob['name']}    select peer_prefix, total_count, play_type from ${TotalPeerCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailyProvinceFilePlayCountJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailyProvinceFilePlayCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyProvinceFilePlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyProvinceFilePlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyProvinceFilePlayCountJob['name']}    select province, username, play_count, play_type from ${DailyProvinceFilePlayCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+WeeklyProvinceFilePlayCountJob_task
+    [Documentation]    follow the job DailyProvinceFilePlayCount
+    ...    说明：计算结果存放在那一周的星期一
+    [Tags]    platform_task
+    @{varlist}    Create List    exectime=20160515    export=true
+    createjobexpecteddata    ${WeeklyProvinceFilePlayCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${WeeklyProvinceFilePlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${WeeklyProvinceFilePlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${WeeklyProvinceFilePlayCountJob['name']}    select province, username, play_count, play_type from ${WeeklyProvinceFilePlayCountJob['mysqltable']} where date_time='20160509'
+    Should Be True    ${re}
+
+CurrentOnlineProvinceDistributeJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    16
+    @{varlist}    Create List    hour=true    time=16    export=true
+    createjobexpecteddata    ${CurrentOnlineProvinceDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentOnlineProvinceDistributeJob['mysqltable']}
+    startodpsjob    ${workpath}    ${CurrentOnlineProvinceDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${CurrentOnlineProvinceDistributeJob['name']}    select province, username, online_count, play_type from ${CurrentOnlineProvinceDistributeJob['mysqltable']}
+    Should Be True    ${re}
+
+CurrentOnlinePeerDistributeJob_task
+    [Documentation]    prerequisite: PeerOnlineTimeCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21    export=true
+    createjobexpecteddata    ${CurrentOnlinePeerDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentOnlinePeerDistributeJob['mysqltable']}
+    startodpsjob    ${workpath}    ${CurrentOnlinePeerDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${CurrentOnlinePeerDistributeJob['name']}    select username, online_count, play_type from ${CurrentOnlinePeerDistributeJob['mysqltable']}
+    Should Be True    ${re}
+
+CurrentOnlineISPDistributeJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task    distinct
+    ${var}    Convert to Integer    15
+    @{varlist}    Create List    hour=true    time=15    export=true
+    createjobexpecteddata    ${CurrentOnlineISPDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentOnlineISPDistributeJob['mysqltable']}
+    startodpsjob    ${workpath}    ${CurrentOnlineISPDistributeJob['name']}    ${varlist}
+    ${re}    compareresultlinenumbermysql    ${CurrentOnlineISPDistributeJob['name']}    select isp, username, online_count, play_type from ${CurrentOnlineISPDistributeJob['mysqltable']}
+    Should Be True    ${re}
+
+DailyClientErrorsStatisticsJob_task
+    [Documentation]    prerequisite: ClientExceptionCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyClientErrorsStatisticsJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyClientErrorsStatisticsJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyClientErrorsStatisticsJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyClientErrorsStatisticsJob['name']}    select peer_prefix, err_type, error_count, play_type from ${DailyClientErrorsStatisticsJob ['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailyLivePeerActivityJob_task
+    [Documentation]    prerequisite: LiveProgressCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    hour=true    export=true
+    createjobexpecteddata    ${DailyLivePeerActivityJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyLivePeerActivityJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyLivePeerActivityJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyLivePeerActivityJob['name']}    select peer_prefix, active_count, play_type from ${DailyLivePeerActivityJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+HourLivePeerOnlineDistributeJob_task
+    [Documentation]    prerequisite: LiveProgressCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    15
+    @{varlist}    Create List    hour=true    time=15    export=true
+    createjobexpecteddata    ${HourLivePeerOnlineDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourLivePeerOnlineDistributeJob['mysqltable']} where date_time=${recorddate} and hour=${var}
+    startodpsjob    ${workpath}    ${HourLivePeerOnlineDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourLivePeerOnlineDistributeJob['name']}    select hour, username, online_count, play_type from ${HourLivePeerOnlineDistributeJob ['mysqltable']} where date_time=${recorddate} and hour=${var}
+    Should Be True    ${re}
+
+HourPeerOnlineDistributeJob_task
+    [Documentation]    prerequisite: PeerOnlineTimeCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    15
+    @{varlist}    Create List    hour=true    time=15    export=true
+    createjobexpecteddata    ${HourPeerOnlineDistributeJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourPeerOnlineDistributeJob['mysqltable']} where date_time=${recorddate} and hour=15
+    startodpsjob    ${workpath}    ${HourPeerOnlineDistributeJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourPeerOnlineDistributeJob['name']}    select hour, username, online_count, play_type from ${HourPeerOnlineDistributeJob['mysqltable']} where date_time=${recorddate} and hour=15
+    Should Be True    ${re}
+
+CurrentLiveRoughnessJob_task
+    [Documentation]    prerequisite: QosBufferingCleaned_data and LiveProgressCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.001
+    ${var}    Convert to Integer    23
+    @{varlist}    Create List    hour=true    time=23    export=true
+    createjobexpecteddata    ${CurrentLiveRoughnessJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${CurrentLiveRoughnessJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${CurrentLiveRoughnessJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${CurrentLiveRoughnessJob['name']}    select peer_prefix, roughness, five_minute_index, play_type from ${CurrentLiveRoughnessJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+TodayP2PRateJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    2
+    ${var1}    Convert to Number    0.175
+    ${var}    Convert to Integer    19
+    @{varlist}    Create List    hour=true    export=true    time=19
+    createjobexpecteddata    ${TodayP2PRateJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayP2PRateJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${TodayP2PRateJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${TodayP2PRateJob['name']}    select username, url, p2p_rate, play_type from ${TodayP2PRateJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+HourP2PRatePerUserJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    2
+    ${var1}    Convert to Number    0.0001
+    ${var}    Convert to Integer    22
+    @{varlist}    Create List    export=true    hour=true    time=22
+    createjobexpecteddata    ${HourP2PRatePerUserJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${HourP2PRatePerUserJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${HourP2PRatePerUserJob['name']}    select username, hour_time, p2p_rate, play_type from ${HourP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+DailyP2PRatePerUserJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.0001
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyP2PRatePerUserJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyP2PRatePerUserJob ['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyP2PRatePerUserJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${DailyP2PRatePerUserJob['name']}    select username, p2p_rate, play_type from ${DailyP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+TodayP2PRatePerUserJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.075
+    ${var}    Convert to Integer    23
+    @{varlist}    Create List    export=true    hour=true    time=23
+    createjobexpecteddata    ${TodayP2PRatePerUserJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${TodayP2PRatePerUserJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${TodayP2PRatePerUserJob['name']}    select username, p2p_rate, play_type from ${TodayP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+HourFilePlayCountJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21    export=true
+    createjobexpecteddata    ${HourFilePlayCountJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourFilePlayCountJob ['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${HourFilePlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourFilePlayCountJob['name']}    select url, username, play_count, hour_time, play_type from ${HourFilePlayCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+HourFilePlayCountAccumulateModeJob_task
+    [Documentation]    prerequisite: FileOnDemandCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21
+    createjobexpecteddata    ${HourFilePlayCountAccumulateModeJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${HourFilePlayCountAccumulateModeJob['name']}    ${varlist}
+    downloaddatafromodps    ${HourFilePlayCountAccumulateModeJob['outputtable']}    /outputdata/${HourFilePlayCountAccumulateModeJob['name']}DB.txt
+    ${re}    compareresult    ${HourFilePlayCountAccumulateModeJob['name']}
+    Should Be True    ${re}
+
+TodayFilePlayCountJob_task
+    [Documentation]    follow the job HourFilePlayCountAccumulateMode
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21    export=true
+    createjobexpecteddata    ${TodayFilePlayCountJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayFilePlayCountJob['mysqltable']}
+    startodpsjob    ${workpath}    ${TodayFilePlayCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${TodayFilePlayCountJob['name']}    select url, username, play_count, play_type from ${TodayFilePlayCountJob['mysqltable']}
+    Should Be True    ${re}
+
+DailyFilePlayCountJob_task
+    [Documentation]    follow the job TodayFilePlayCount
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    2
+    ${var1}    Convert to Integer    7
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyFilePlayCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyFilePlayCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyFilePlayCountJob['name']}    ${varlist}
+    ${re}    compareresultpatternmysql    ${DailyFilePlayCountJob['name']}    select url, username, play_count, file_hot, play_type from ${DailyFilePlayCountJob['mysqltable']} where date_time=${recorddate}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+
+HourTotalFlowJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data and UploadFlowCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    11
+    @{varlist}    Create List    hour=true    time=11    export=true
+    createjobexpecteddata    ${HourTotalFlowJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourTotalFlowJob['mysqltable']} where date_time=${recorddate} and hour=11
+    startodpsjob    ${workpath}    ${HourTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${HourTotalFlowJob['name']}    select hour, username, cdn_download, p2p_download, total_download, upload, play_type from ${HourTotalFlowJob['mysqltable']} where date_time=${recorddate} and hour=11
+    Should Be True    ${re}
+
+TodayTotalFlowJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data and UploadFlowCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    23
+    @{varlist}    Create List    hour=true    time=23    export=true
+    createjobexpecteddata    ${TodayTotalFlowJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayTotalFlowJob['mysqltable']}
+    startodpsjob    ${workpath}    ${TodayTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${TodayTotalFlowJob['name']}    select username, cdn_download, p2p_download, total_download, upload, play_type from ${TodayTotalFlowJob['mysqltable']}
+    Should Be True    ${re}
+
+DailyTotalFlowJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data and UploadFlowCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyTotalFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyTotalFlowJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyTotalFlowJob['name']}    select username, cdn_download, p2p_download, total_download, upload, play_type from ${DailyTotalFlowJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+MonthlyTotalFlowJob_task
+    [Documentation]    follow the job DailyTotalFlowJob_task
+    [Tags]    platform_task
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    createjobexpecteddata    ${MonthlyTotalFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${MonthlyTotalFlowJob['mysqltable']} where month=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyTotalFlowJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${MonthlyTotalFlowJob['name']}    select username, cdn_download, p2p_download, total_download, upload, play_type from ${MonthlyTotalFlowJob['mysqltable']} where month=${recordmonth}
+    Should Be True    ${re}
+
+DailyPeerActivityJob_task
+    [Documentation]    prerequisite: PeerOnlineTimeCleaned_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    21
+    @{varlist}    Create List    hour=true    time=21    export=true
+    createjobexpecteddata    ${DailyPeerActivityJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyPeerActivityJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyPeerActivityJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyPeerActivityJob['name']}    select peer_prefix, active_count, play_type from ${DailyPeerActivityJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailyPeerOnlineTimeJob_task
+    [Documentation]    follow the job DailyPeerActivityJob_task
+    [Tags]    odps    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Integer    5
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyPeerOnlineTimeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyPeerOnlineTimeJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyPeerOnlineTimeJob['name']}    ${varlist}
+    downloaddatafromodps    ${DailyPeerOnlineTimeJob['outputtable']}    /outputdata/${DailyPeerOnlineTimeJob['name']}ODPS.txt
+    ${re}    compareresultpatternodps    ${DailyPeerOnlineTimeJob['name']}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+    ${re}    compareresultlinenumbermysql    ${DailyPeerOnlineTimeJob['name']}    select peer_prefix, average_online_time, play_type from ${DailyPeerOnlineTimeJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+WeeklyAverageOnlineTimeJob_task
+    [Documentation]    follow the job DailyPeerOnlineTime
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.5
+    @{varlist}    Create List    exectime=20160515    export=true
+    createjobexpecteddata    ${WeeklyAverageOnlineTimeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${WeeklyAverageOnlineTimeJob['mysqltable']} where sun_time='20160515'
+    startodpsjob    ${workpath}    ${WeeklyAverageOnlineTimeJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${WeeklyAverageOnlineTimeJob['name']}    select peer_prefix, average_time, play_type from ${WeeklyAverageOnlineTimeJob['mysqltable']} where sun_time='20160515'    ${var0}    ${var1}
+    Should Be True    ${re}
+
+MonthlyActivePeerCountAverageJob_task
+    [Documentation]    follow the job DailyPeerActivityJob_task
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Integer    2
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    createjobexpecteddata    ${MonthlyActivePeerCountAverageJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${MonthlyActivePeerCountAverageJob['mysqltable']} where month_time=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyActivePeerCountAverageJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${MonthlyActivePeerCountAverageJob['name']}    select peer_prefix, active_count, play_type from ${MonthlyActivePeerCountAverageJob['mysqltable']} where month_time=${recordmonth}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+FiveMinuteAverageLiveDelayJob_task
+    [Documentation]    prerequisite: LiveDelay_data created
+    [Tags]    platform_task
+    ${var}    Convert to Integer    19
+    @{varlist}    Create List    hour=true    time=19    export=true
+    createjobexpecteddata    ${FiveMinuteAverageLiveDelayJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${FiveMinuteAverageLiveDelayJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${FiveMinuteAverageLiveDelayJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${FiveMinuteAverageLiveDelayJob['name']}    select username, five_minute_index, average_delay from ${FiveMinuteAverageLiveDelayJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+MonthlyDistinctPeerIDJob_task
+    [Documentation]    special download mode from odps to notice
+    ...    prerequisite: PeerOnlineTimeCleaned_data created and the output will add into the input
+    [Tags]    odps    platform_task
+    createjobexpecteddata    ${MonthlyDistinctPeerIDJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${MonthlyDistinctPeerIDJob['name']}
+    downloaddatafromodpsbypartten    ${MonthlyDistinctPeerIDJob['outputtable']}    /outputdata/${MonthlyDistinctPeerIDJob['name']}DB.txt    month=201603
+    ${re}    compareresult    ${MonthlyDistinctPeerIDJob['name']}
+    Should Be True    ${re}
+
+MonthlyPeerActivityJob_task
+    [Documentation]    follow the job MonthlyDistinctPeerID
+    [Tags]    platform_task
+    @{varlist}    Create List    exectime=${recordmonth}    export=true    partitiontype=month
+    createjobexpecteddata    ${MonthlyPeerActivityJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${MonthlyPeerActivityJob['mysqltable']} where month_time=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyPeerActivityJob ['name']}    ${varlist}
+    ${re}    compareresultmysql    ${MonthlyPeerActivityJob ['name']}    select peer_prefix, active_count, play_type from ${MonthlyPeerActivityJob['mysqltable']} where month_time=${recordmonth}
+    Should Be True    ${re}
+
+DailyStartTimeCountJob_task
+    [Documentation]    prerequisite: VodPerformanceCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailyStartTimeCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyStartTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyStartTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyStartTimeCountJob['name']}    select peer_prefix, start_time, play_count, play_type from ${DailyStartTimeCountJob ['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+ThirtyDayStartTimeCountJob_task
+    [Documentation]    follow the job DailyStartTimeCountJob_task
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${ThirtyDayStartTimeCountJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${ThirtyDayStartTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${ThirtyDayStartTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${ThirtyDayStartTimeCountJob['name']}    select peer_prefix, start_time, play_count, play_type from ${ThirtyDayStartTimeCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+DailySeekTimeCountJob_task
+    [Documentation]    prerequisite: VodPerformanceCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailySeekTimeCountJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailySeekTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailySeekTimeCountJob['name']}    select peer_prefix, seek_time, seek_count, play_type from ${DailySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+ThirtyDaySeekTimeCountJob_task
+    [Documentation]    follow the job DailySeekTimeCountJob_task
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${ThirtyDaySeekTimeCountJob['name'] }
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${ThirtyDaySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${ThirtyDaySeekTimeCountJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${ThirtyDaySeekTimeCountJob['name']}    select peer_prefix, seek_time, seek_count, play_type from ${ThirtyDaySeekTimeCountJob['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}
+
+AllPeerISPProvinceDistributeJob_task
+    [Documentation]    prerequisite: PeerInfoCleaned_data created and the output will add into the input
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${AllPeerISPProvinceDistributeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${AllPeerISPProvinceDistributeJob['mysqltable1']}
+    operatemysqldata    delete from ${AllPeerISPProvinceDistributeJob['mysqltable2']}
+    startodpsjob    ${workpath}    ${AllPeerISPProvinceDistributeJob['name']}    ${varlist}
+    ${re0}    compareresultmysql    ${AllPeerISPProvinceDistributeJob['aliasname1']}    select username, isp, total_count \ from ${AllPeerISPProvinceDistributeJob['mysqltable1']}
+    Should Be True    ${re0}
+    ${re1}    compareresultmysql    ${AllPeerISPProvinceDistributeJob['aliasname2']}    select username, province, total_count \ from ${AllPeerISPProvinceDistributeJob['mysqltable2']}
+    Should Be True    ${re1}
+
+FiveMinuteBandWidthJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    ${4}    Convert to Integer    4
+    @{var0}    Create List    ${2}    ${3}    ${4}
+    ${var1}    Convert to Number    0.1
+    ${var}    Convert to Integer    22
+    @{varlist}    Create List    export=true    hour=true    time=22
+    createjobexpecteddata    ${FiveMinuteBandWidthJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    dropodpsdata    ${PeakBandWidthMiddleTableJob['outputtable']}
+    operatemysqldata    delete from ${FiveMinuteBandWidthJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${FiveMinuteBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultabspatternlistmysql    ${FiveMinuteBandWidthJob['name']}    select timestamp, username, total_bandwidth, p2p_bandwidth, cdn_bandwidth, play_type from ${FiveMinuteBandWidthJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+HourPeakBandWidthJob_task
+    [Documentation]    follow the job FiveMinutePeakBandWidth
+    [Tags]    accuracy    platform_task
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    ${4}    Convert to Integer    4
+    @{var0}    Create List    ${2}    ${3}    ${4}
+    @{var1}    Create List    ${3}    ${3}    ${3}
+    ${var}    Convert to Integer    22
+    @{varlist}    Create List    export=true    hour=true    time=22
+    createjobexpecteddata    ${HourPeakBandWidthJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    dropodpsdata    ${HourPeakBandWidthJob['name']}
+    operatemysqldata    delete from ${HourPeakBandWidthJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${HourPeakBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultpatternlistmysql    ${HourPeakBandWidthJob['name']}    select timestamp, username, total_bandwidth, cdn_bandwidth, p2p_bandwidth, play_type from ${HourPeakBandWidthJob['mysqltable']} where date_time=${recorddate}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+
+DailyPeakBandWidthJob_task
+    [Documentation]    follow the job FiveMinutePeakBandWidth
+    [Tags]    platform_task    accuracy
+    ${1}    Convert to Integer    1
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    @{var0}    Create List    ${1}    ${2}    ${3}
+    @{var1}    Create List    ${3}    ${3}    ${3}
+    @{varlist}    Create List    export=true    hour=true
+    createjobexpecteddata    ${DailyPeakBandWidthJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    dropodpsdata    ${PeakBandWidthMiddleTableJob['outputtable']}
+    operatemysqldata    delete from ${DailyPeakBandWidthJob['mysqltable']} where date_time=${recorddate}
+    : FOR    ${i}    IN RANGE    24
+    \    @{varlist1}    Create List    export=true    hour=true    time=${i}
+    \    startodpsjob    ${workpath}    ${FiveMinutePeakBandWidthJob['name']}    ${varlist1}
+    startodpsjob    ${workpath}    ${DailyPeakBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultpatternlistmysql    ${DailyPeakBandWidthJob['name']}    select username, total_bandwidth, cdn_bandwidth, p2p_bandwidth, play_type from ${DailyPeakBandWidthJob['mysqltable']} where date_time=${recorddate}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+
+MonthlyPeakBandWidthJob_task
+    [Documentation]    follow the job DailyPeakBandWidth
+    [Tags]    platform_task    accuracy
+    ${1}    Convert to Integer    1
+    ${2}    Convert to Integer    2
+    ${3}    Convert to Integer    3
+    @{var0}    Create List    ${1}    ${2}    ${3}
+    @{var1}    Create List    ${3}    ${3}    ${3}
+    @{varlist}    Create List    exectime=201605    export=true    partitiontype=month
+    perpareconfig    ${workpath}    ${configpath}
+    createjobexpecteddata    ${MonthlyPeakBandWidthJob['name']}
+    operatemysqldata    delete from ${MonthlyPeakBandWidthJob['mysqltable']} where month=${recordmonth}
+    startodpsjob    ${workpath}    ${MonthlyPeakBandWidthJob['name']}    ${varlist}
+    ${re}    compareresultpatternlistmysql    ${MonthlyPeakBandWidthJob['name']}    select username, total_bandwidth, cdn_bandwidth, p2p_bandwidth, play_type from ${MonthlyPeakBandWidthJob['mysqltable']} where month=${recordmonth}    .*%s.*    ${var0}    ${var1}
+    Should Be True    ${re}
+
+InputDownloadFlowJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputDownloadFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputDownloadFlowJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputDownloadFlowJob['outputtable']}    /outputdata/${InputDownloadFlowJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputDownloadFlowJob['name']}
+    Should Be True    ${re}
+
+FileOnDemandJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${FileOnDemandJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${FileOnDemandJob['name']}    ${varlist}
+    downloaddatafromodps    ${FileOnDemandJob['outputtable']}    /outputdata/${FileOnDemandJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${FileOnDemandJob['name']}
+    Should Be True    ${re}
+
+InputPeerInfoJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputPeerInfoJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputPeerInfoJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputPeerInfoJob['outputtable']}    /outputdata/${InputPeerInfoJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputPeerInfoJob['name']}
+    Should Be True    ${re}
+
+InputVODPerformanceJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputVODPerformanceJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputVODPerformanceJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputVODPerformanceJob['outputtable']}    /outputdata/${InputVODPerformanceJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputVODPerformanceJob['name']}
+    Should Be True    ${re}
+
+InputClientExceptionJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputClientExceptionJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputClientExceptionJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputClientExceptionJob['outputtable']}    /outputdata/${InputClientExceptionJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputClientExceptionJob['name']}
+    Should Be True    ${re}
+
+InputPeerOnlineTimeJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputPeerOnlineTimeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputPeerOnlineTimeJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputPeerOnlineTimeJob['outputtable']}    /outputdata/${InputPeerOnlineTimeJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputPeerOnlineTimeJob['name']}
+    Should Be True    ${re}
+
+InputUploadFlowJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputUploadFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputUploadFlowJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputUploadFlowJob['outputtable']}    /outputdata/${InputUploadFlowJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputUploadFlowJob['name']}
+    Should Be True    ${re}
+
+InputLiveProgress_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputLiveProgress['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputLiveProgress['name']}    ${varlist}
+    downloaddatafromodps    ${InputLiveProgress['outputtable']}    /outputdata/${InputLiveProgress['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputLiveProgress['name']}
+    Should Be True    ${re}
+
+InputQOSBuffering_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputQOSBuffering['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputQOSBuffering['name']}    ${varlist}
+    downloaddatafromodps    ${InputQOSBuffering['outputtable']}    /outputdata/${InputQOSBuffering['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputQOSBuffering['name']}
+    Should Be True    ${re}

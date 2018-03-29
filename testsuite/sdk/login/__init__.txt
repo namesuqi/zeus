@@ -1,0 +1,5 @@
+*** Settings ***
+Suite Setup       Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+Suite Teardown    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+Library           ../../../lib/sdk/common_tool/sdk_handle.py
+Variables         ../../../lib/constant/sdk.py

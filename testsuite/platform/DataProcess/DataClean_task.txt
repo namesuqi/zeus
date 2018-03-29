@@ -1,0 +1,134 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_RawClientException_data
+    [Tags]    platform_test    raw
+    createtabledata    RawClientException
+
+create_RawDownloadFlow_data
+    [Tags]    platform_test    raw
+    createtabledata    RawDownloadFlow
+
+create_RawFileOnDemand_data
+    [Tags]    platform_test    raw
+    createtabledata    RawFileOnDemand
+
+create_RawLiveProgress_data
+    [Tags]    raw    platform_test
+    createtabledata    RawLiveProgress
+
+create_RawPeerInfo_data
+    [Tags]    platform_test    raw
+    createtabledata    RawPeerInfo
+
+create_RawPeerOnlineTime_data
+    [Tags]    platform_test    raw
+    createtabledata    RawPeerOnlineTime
+
+create_RawQosBuffering_data
+    [Tags]    raw    platform_test
+    createtabledata    RawQosBuffering
+
+create_RawUploadFlow_data
+    [Tags]    platform_test    raw
+    createtabledata    RawUploadFlow
+
+create_RawVodPerformance_data
+    [Tags]    platform_test    raw
+    createtabledata    RawVodPerformance
+
+InputDownloadFlowJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputDownloadFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputDownloadFlowJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputDownloadFlowJob['outputtable']}    /outputdata/${InputDownloadFlowJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputDownloadFlowJob['name']}
+    Should Be True    ${re}
+
+FileOnDemandJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${FileOnDemandJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${FileOnDemandJob['name']}    ${varlist}
+    downloaddatafromodps    ${FileOnDemandJob['outputtable']}    /outputdata/${FileOnDemandJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${FileOnDemandJob['name']}
+    Should Be True    ${re}
+
+InputPeerInfoJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputPeerInfoJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputPeerInfoJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputPeerInfoJob['outputtable']}    /outputdata/${InputPeerInfoJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputPeerInfoJob['name']}
+    Should Be True    ${re}
+
+InputVODPerformanceJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputVODPerformanceJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputVODPerformanceJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputVODPerformanceJob['outputtable']}    /outputdata/${InputVODPerformanceJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputVODPerformanceJob['name']}
+    Should Be True    ${re}
+
+InputClientExceptionJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputClientExceptionJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputClientExceptionJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputClientExceptionJob['outputtable']}    /outputdata/${InputClientExceptionJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputClientExceptionJob['name']}
+    Should Be True    ${re}
+
+InputPeerOnlineTimeJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputPeerOnlineTimeJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputPeerOnlineTimeJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputPeerOnlineTimeJob['outputtable']}    /outputdata/${InputPeerOnlineTimeJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputPeerOnlineTimeJob['name']}
+    Should Be True    ${re}
+
+InputUploadFlowJob_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputUploadFlowJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputUploadFlowJob['name']}    ${varlist}
+    downloaddatafromodps    ${InputUploadFlowJob['outputtable']}    /outputdata/${InputUploadFlowJob['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputUploadFlowJob['name']}
+    Should Be True    ${re}
+
+InputLiveProgress_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputLiveProgress['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputLiveProgress['name']}    ${varlist}
+    downloaddatafromodps    ${InputLiveProgress['outputtable']}    /outputdata/${InputLiveProgress['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputLiveProgress['name']}
+    Should Be True    ${re}
+
+InputQOSBuffering_task
+    [Tags]    odps    cleanup    platform_task    distinct
+    @{varlist}    Create List    cleanup=true    hour=true    time=23
+    createjobexpecteddata    ${InputQOSBuffering['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    startodpsjob    ${workpath}    ${InputQOSBuffering['name']}    ${varlist}
+    downloaddatafromodps    ${InputQOSBuffering['outputtable']}    /outputdata/${InputQOSBuffering['name']}DB.txt
+    ${re}    compareresultlinenumber    ${InputQOSBuffering['name']}
+    Should Be True    ${re}

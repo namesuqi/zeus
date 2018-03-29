@@ -1,0 +1,43 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+query_source_ok
+    [Documentation]    目标：验证能够根据指定的file_id查询其对应的源信息
+    [Tags]    dir    regression    api
+    ${response}    Dir Query Source Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${CIWEN_FILE_ID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Fid    ${CIWEN_FILE_ID}
+    ${url}    Get Field Value    ${response}    url
+    Should Be Equal    ${url}    @{FileInfo}[3]
+    ${size}    Get Field Value    ${response}    size
+    Should Be Equal    ${size}    @{FileInfo}[0]
+    ${sourceType}    Get Field Value    ${response}    sourceType
+    Should Be Equal    ${sourceType}    @{FileInfo}[4]
+    ${source_url}    Get Field Value    ${response}    source_url
+    Should Be Equal    ${source_url}    @{FileInfo}[2]
+
+invalid_file_id
+    [Documentation]    目标：验证输入的file_id不存在时，返回E_FILE_NON_EXISTS
+    [Tags]    dir    regression    api
+    ${response}    Dir Query Source Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${INVALID_FILE_ID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FILE_NON_EXISTS
+
+no_file_id
+    [Documentation]    目标：验证参数fileid缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Query Source Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING

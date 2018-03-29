@@ -1,0 +1,24 @@
+topic=test_flume_testid=666number=666string=kkknumber_default=string_default=kkknumber_test=666string_test=kkk
+topic=test_flume_testid=666number=666string=kkknumber_test=666string_test=kkk
+topic=test_flume_testid=666number=666string=kkknumber_test=string_test=
+topic=test_flume_testid=666number=666string=kkknumber_default=666string_default=kkknumber_test=string_test=
+topic=live_delete_channelfile_id=666timestamp=666
+#
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=1public_ip=1.1.1.1public_port=6666private_ip=1.1.1.1private_port=6666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=1public_ip=1.1.1.1public_port=6666private_ip=1.1.1.1private_port=6666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=3public_ip=1.1.1.1public_port=6666private_ip=1.1.1.3private_port=6666country=kkkprovince_id=31000city_id=321isp_id=timestamp=666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=3public_ip=1.1.1.1public_port=6666private_ip=1.1.1.3private_port=6666country=kkkprovince_id=31000city_id=321isp_id=100017timestamp=666
+
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=4public_ip=1.1.1.1public_port=6666private_ip=1.1.1.4private_port=6666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=3public_ip=1.1.1.1public_port=6666private_ip=1.1.1.3private_port=6666country=province_id=city_id=isp_id=timestamp=666
+#
+topic=lf_reportpeer_id=6666662222ABCDEABCDEABCDE1000222version=3.9.0country=sssprovince_id=31000city_id=12345isp_id=666file_id=FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFcppc=1operation=addupload=0download=0
+topic=lf_reportpeer_id=6666662222ABCDEABCDEABCDE1000222version=3.9.0country=sssprovince_id=22000city_id=12345isp_id=666file_id=FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFcppc=1operation=addupload=0download=0
+topic=lf_reportpeer_id=6666662222ABCDEABCDEABCDE1000222version=3.9.1country=sssprovince_id=31000city_id=12345isp_id=666file_id=FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFcppc=1operation=addupload=0download=0
+topic=lf_reportpeer_id=6666662222ABCDEABCDEABCDE1000222version=3.9.2country=sssprovince_id=31000city_id=12345isp_id=666file_id=FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFcppc=1operation=addupload=0download=0
+
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=1public_ip=1.1.1.1public_port=6666private_ip=1.1.1.1private_port=6666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=1public_ip=1.1.1.1public_port=6666private_ip=1.1.1.1private_port=6666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=3public_ip=1.1.1.1public_port=6666private_ip=1.1.1.3private_port=6666country=kkkprovince_id=31000city_id=321isp_id=100017timestamp=666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=4public_ip=1.1.1.1public_port=6666private_ip=1.1.1.4private_port=6666
+topic=heartbeatpeer_id=6666662222ABCDEABCDEABCDE1000222sdk_version=3.9.0nat_type=3public_ip=1.1.1.1public_port=6666private_ip=1.1.1.3private_port=6666country=province_id=city_id=isp_id=timestamp=666

@@ -1,0 +1,111 @@
+*** Settings ***
+Force Tags
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Variables         ../../../lib/constant/database.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/p2p_ops.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/etcd_handler.py
+
+*** Test Cases ***
+upsert_group_ok
+    [Documentation]    验证可以成功添加域名组信息
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}    ${HOSTNAME}
+    ...    ${HOSTNAME_2}    ${HOSTNAME_3}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_GROUP}    ${GROUPNAME}
+    @{hosts}    Set Variable    &{value_list}[${key}]
+    Should Be Equal As Strings    @{hosts}[0]    ${HOSTNAME}
+    Should Be Equal As Strings    @{hosts}[1]    ${HOSTNAME_2}
+    Should Be Equal As Strings    @{hosts}[2]    ${HOSTNAME_3}
+    [Teardown]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+
+upsert_group_empty
+    [Documentation]    验证必选参数groupname缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}    ${HOSTNAME}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_group_ok_too_long
+    [Documentation]    验证可以成功添加域名组信息（针对长度过长的域名组）
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME_LONG}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME_LONG}    ${HOSTNAME}
+    ...    ${HOSTNAME_2}    ${HOSTNAME_3}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${GROUPNAME_LONG}    ${DOMAIN_NAME_GROUP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_GROUP}    ${GROUPNAME_LONG}
+    @{hosts}    Set Variable    &{value_list}[${key}]
+    Should Be Equal As Strings    @{hosts}[0]    ${HOSTNAME}
+    Should Be Equal As Strings    @{hosts}[1]    ${HOSTNAME_2}
+    Should Be Equal As Strings    @{hosts}[2]    ${HOSTNAME_3}
+    [Teardown]    Del Etcd Key    ${GROUPNAME_LONG}    ${DOMAIN_NAME_GROUP}
+
+upsert_group_hosts_empty
+    [Documentation]    验证请求体body中hostname缺失时，ops可返回400和{}
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME_2}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME_2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${GROUPNAME_2}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${value_list}    ${None}
+    [Teardown]    Del Etcd Key    ${GROUPNAME_2}    ${DOMAIN_NAME_GROUP}
+
+upsert_group_host_empty
+    [Documentation]    验证请求体body中有为空字符串的hostname时，ops可返回400和{}
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME_2}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME_2}    ${HOSTNAME}
+    ...    ${EMPTY}    ${HOSTNAME_2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${GROUPNAME_2}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${value_list}    ${None}
+    [Teardown]    Del Etcd Key    ${GROUPNAME_2}    ${DOMAIN_NAME_GROUP}
+
+upsert_group_ok_host_same
+    [Documentation]    验证请求体中的hostname有重复时，ops可返回200和{}，ops写入etcd时可对hostname去重
+    ...
+    ...    例：请求体为["test_host1", "test_host1", "test_host2"]，
+    ...     \ \ ops写入etcd的应为["test_host1", "test_host2"]
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}    ${HOSTNAME}
+    ...    ${HOSTNAME}    ${HOSTNAME_2}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_GROUP}    ${GROUPNAME}
+    @{hosts}    Set Variable    &{value_list}[${key}]
+    Length Should Be    ${hosts}    ${2}
+    Should Be Equal As Strings    @{hosts}[0]    ${HOSTNAME}
+    Should Be Equal As Strings    @{hosts}[1]    ${HOSTNAME_2}
+    [Teardown]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+
+upsert_group_ok_host_too_long
+    [Documentation]    验证可以成功添加域名组信息（针对长度过长的域名）
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${response}    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}    ${HOSTNAME}
+    ...    ${HOSTNAME_LONG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_GROUP}    ${GROUPNAME}
+    @{hosts}    Set Variable    &{value_list}[${key}]
+    Should Be Equal As Strings    @{hosts}[0]    ${HOSTNAME}
+    Should Be Equal As Strings    @{hosts}[1]    ${HOSTNAME_LONG}
+    [Teardown]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}

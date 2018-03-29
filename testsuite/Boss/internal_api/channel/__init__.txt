@@ -1,0 +1,2 @@
+*** Settings ***
+Documentation     channel对接接口

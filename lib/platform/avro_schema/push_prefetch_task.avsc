@@ -1,0 +1,10 @@
+{
+    "type":"record",
+    "name":"push_prefetch_task",
+    "fields":[
+        {"name":"file_id","type":"string"},
+        {"name":"fsize","type":"long"},
+        {"name":"flag","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

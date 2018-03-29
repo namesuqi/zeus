@@ -1,0 +1,457 @@
+# coding=utf-8
+# author: zengyuetian
+
+service_json = [[{
+  "name":"User",
+  "x":-600,
+  "y":300,
+  "server_num":17,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"SLB1",
+  "x":-200,
+  "y":-300,
+  "server_num":27,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"live-push/flat-flv-srv",
+  "x":250,
+  "y":-300,
+  "server_num":37,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"SLB2",
+  "x":-200,
+  "y":-150,
+  "server_num":11,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"upgrade",
+  "x":250,
+  "y":-150,
+  "server_num":12,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"SLB3",
+  "x":-200,
+  "y":0,
+  "server_num":13,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"dir",
+  "x":-50,
+  "y":0,
+  "server_num":14,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"upload",
+  "x":250,
+  "y":0,
+  "server_num":16,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"Internet",
+  "x":600,
+  "y":0,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"SLB4",
+  "x":-200,
+  "y":150,
+  "server_num":4,
+  "version":"2.1.0",
+  "status":"ok"
+},{
+  "name":"SLB5",
+  "x":-200,
+  "y":300,
+  "server_num":9,
+  "version":"3.0.13",
+  "status":"ok"
+},{
+  "name":"tracker",
+  "x":500,
+  "y":300,
+  "server_num":20,
+  "version":"2.1.13",
+  "status":"1 problems"
+},{
+  "name":"redis-mq",
+  "x":300,
+  "y":150,
+  "server_num":16,
+  "version":"1.0.16",
+  "status":"2 problems"
+},{
+  "name":"redis-single",
+  "x":800,
+  "y":150,
+  "server_num":5,
+  "version":"1.0.8",
+  "status":"ok"
+},{
+  "name":"SLB6",
+  "x":-200,
+  "y":450,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"tracker_go",
+  "x":500,
+  "y":450,
+  "server_num":19,
+  "version":"1.1.0",
+  "status":"ok"
+},{
+  "name":"redis-cluster",
+  "x":1000,
+  "y":450,
+  "server_num":10,
+  "version":"2.1.0",
+  "status":"ok"
+},{
+  "name":"seed-mgr",
+  "x":1200,
+  "y":150,
+  "server_num":4,
+  "version":"1.1.0",
+  "status":"ok"
+},{
+  "name":"recorder-ts",
+  "x":1250,
+  "y":450,
+  "server_num":3,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"mongos",
+  "x":1500,
+  "y":450,
+  "server_num":9,
+  "version":"19.1.0",
+  "status":"ok"
+},{
+  "name":"mongod",
+  "x":1750,
+  "y":450,
+  "server_num":9,
+  "version":"1.1.0",
+  "status":"ok"
+},{
+  "name":"SLB7",
+  "x":-200,
+  "y":600,
+  "server_num":9,
+  "version":"1.14.0",
+  "status":"ok"
+},{
+  "name":"live-channel",
+  "x":-50,
+  "y":600,
+  "server_num":12,
+  "version":"1.10.0",
+  "status":"ok"
+},{
+  "name":"SLB10",
+  "x":300,
+  "y":600,
+  "server_num":21,
+  "version":"0.1.1",
+  "status":"ok"
+},{
+  "name":"channel-mgr",
+  "x":500,
+  "y":600,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"RDS",
+  "x":820,
+  "y":600,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"SLB8",
+  "x":-200,
+  "y":750,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"stun",
+  "x":250,
+  "y":750,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"stun-redis",
+  "x":650,
+  "y":750,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"push-mgr",
+  "x":1000,
+  "y":750,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"SLB9",
+  "x":-200,
+  "y":900,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"funnel",
+  "x":-50,
+  "y":900,
+  "server_num":10,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"kafka",
+  "x":250,
+  "y":900,
+  "server_num":28,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"courier",
+  "x":820,
+  "y":900,
+  "server_num":10,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"flumeMonitor",
+  "x":-200,
+  "y":1100,
+  "server_num":11,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"collector",
+  "x":100,
+  "y":1100,
+  "server_num":22,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"flumeConf5rv",
+  "x":400,
+  "y":1100,
+  "server_num":21,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"sparkCluster",
+  "x":700,
+  "y":1100,
+  "server_num":20,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"opsStats",
+  "x":1100,
+  "y":1100,
+  "server_num":22,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"opsMonitor",
+  "x":1350,
+  "y":1100,
+  "server_num":21,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"opsPanel",
+  "x":1600,
+  "y":1100,
+  "server_num":20,
+  "version":"3.1.0",
+  "status":"ok"
+},{
+  "name":"sparkStreaming",
+  "x":920,
+  "y":1050,
+  "server_num":9,
+  "version":"3.1.0",
+  "status":"ok"
+}],[{
+  "source":"User",
+  "target":"SLB1"
+},{
+  "source":"SLB1",
+  "target":"live-push/flat-flv-srv"
+},{
+  "source":"User",
+  "target":"SLB2"
+},{
+  "source":"SLB2",
+  "target":"upgrade"
+},{
+  "source":"User",
+  "target":"SLB3"
+},{
+  "source":"SLB3",
+  "target":"dir"
+},{
+  "source":"SLB3",
+  "target":"upload"
+},{
+  "source":"upload",
+  "target":"Internet"
+},{
+  "source":"User",
+  "target":"SLB4"
+},{
+  "source":"User",
+  "target":"SLB5"
+},{
+  "source":"SLB5",
+  "target":"tracker"
+},{
+  "source":"tracker",
+  "target":"redis-mq"
+},{
+  "source":"tracker",
+  "target":"redis-single"
+},{
+  "source":"User",
+  "target":"SLB6"
+},{
+  "source":"SLB6",
+  "target":"tracker_go"
+},{
+  "source":"tracker_go",
+  "target":"redis-cluster"
+},{
+  "source":"redis-cluster",
+  "target":"recorder-ts"
+},{
+  "source":"redis-cluster",
+  "target":"tracker"
+},{
+  "source":"redis-cluster",
+  "target":"seed-mgr"
+},{
+  "source":"redis-cluster",
+  "target":"courier"
+},{
+  "source":"redis-cluster",
+  "target":"push-mgr"
+},{
+  "source":"recorder-ts",
+  "target":"mongos"
+},{
+  "source":"mongos",
+  "target":"mongod"
+},{
+  "source":"User",
+  "target":"SLB7"
+},{
+  "source":"SLB7",
+  "target":"live-channel"
+},{
+  "source":"live-channel",
+  "target":"SLB10"
+},{
+  "source":"SLB10",
+  "target":"channel-mgr"
+},{
+  "source":"channel-mgr",
+  "target":"RDS"
+},{
+  "source":"User",
+  "target":"SLB8"
+},{
+  "source":"SLB8",
+  "target":"stun"
+},{
+  "source":"stun",
+  "target":"stun-redis"
+},{
+  "source":"User",
+  "target":"SLB9"
+},{
+  "source":"User",
+  "target":"SLB9"
+},{
+  "source":"SLB9",
+  "target":"funnel"
+},{
+  "source":"funnel",
+  "target":"kafka"
+},{
+  "source":"kafka",
+  "target":"courier"
+},{
+  "source":"kafka",
+  "target":"collector"
+},{
+  "source":"kafka",
+  "target":"sparkCluster"
+},{
+  "source":"kafka",
+  "target":"sparkStreaming"
+},{
+  "source":"stun",
+  "target":"courier"
+},{
+  "source":"flumeMonitor",
+  "target":"collector"
+},{
+  "source":"collector",
+  "target":"flumeConf5rv"
+},{
+  "source":"sparkCluster",
+  "target":"opsStats"
+},{
+  "source":"opsStats",
+  "target":"opsMonitor"
+},{
+  "source":"opsMonitor",
+  "target":"opsPanel"
+}]]
+
+
+my_json = service_json[0]
+my_set = set()
+for my_dict in my_json:
+    for key, value in my_dict.items():
+        if key == "name":
+            if value.find("User") < 0 and value.find("SLB") < 0 and value.find("Internet") < 0:
+                my_set.add(value)
+
+print my_set
+
+
+
+
+
+
+
+
+
+
+
+
+

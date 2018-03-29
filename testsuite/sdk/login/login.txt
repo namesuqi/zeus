@@ -1,0 +1,38 @@
+*** Settings ***
+Library           ../../../lib/business/sdk_dash_board.py
+Library           Collections
+Library           HttpLibrary.HTTP
+Variables         ../../../lib/constant/sdk.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/constant/account.py
+Library           Remote    http://${SDK1_IP}:${REMOTE_AGENT_PORT}    WITH NAME    Sdk1Remote
+
+*** Test Cases ***
+SdkNotLogin
+    [Documentation]    Target：Validate E_TS_NOT_LOGIN
+    [Tags]    sdk
+    Sdk1Remote.RestartSDK
+    ${login}    Get Login
+    ${status}    Get Json Value    ${login}    /status
+    Log Many    "Login Status is: "    ${status}
+    Should Be Equal    ${status}    "E_TS_NOT_LOGIN"
+
+SdkLoginOK
+    [Documentation]    Target：Validate sdk login within 15 seconds
+    [Tags]    sdk
+    Sdk1Remote.RestartSDK
+    Sleep    15
+    ${login}    Get Login
+    ${status}    Get Json Value    ${login}    /status
+    Log Many    "Login Status is: "    ${status}
+    Should Be Equal    ${status}    "E_OK"
+
+SdkVersionCorrect
+    [Documentation]    Target：Validate sdk version is correct
+    [Tags]    sdk
+    Log Many    "sdk version should be update before run this test case"
+    Sdk1Remote.RestartSDK
+    Sleep    15
+    ${version}    Get Version
+    ${core}    Get Json Value    ${version}    /core
+    Log Many    "SDK Version is: "    ${core}

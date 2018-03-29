@@ -1,0 +1,98 @@
+*** Settings ***
+Default Tags
+Test Timeout      60 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           lib.interface.up.panel_server
+Library           lib.database.mysql_handler
+
+*** Test Cases ***
+peer_online_ok
+    [Documentation]    step only hour,取区间内任意一个小时的数据
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    hour    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+peer_online_not_login
+    [Tags]    panel
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_LOGIN
+
+peer_online_none_peer_prefix
+    [Tags]    panel
+    [Setup]    create account
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NONE_PEER_PREFIX
+    [Teardown]    delete account
+
+peer_online_miss_start
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${EMPTY}    1475054120000
+    ...    minute    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+peer_online_miss_end
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    ${EMPTY}
+    ...    minute    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+peer_online_miss_step
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    ${EMPTY}    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+peer_online_invalid_start
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    INVALID_TIMESTAMP    1475054120000
+    ...    minute    ${true}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+peer_online_invalid_end
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    INVALID_TIMESTAMP
+    ...    minute    ${true}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+peer_online_invalid_step
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Online    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    INVALID_STEP    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+*** Keywords ***
+Save Login Cookie
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    Save Cookies    ${res}    panel_login_cookie
+
+create account
+    ${username}    Evaluate    str('tester')
+    db_add_user_no_prefix    ${username}    123456
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    tester    123456
+    Save Cookies    ${res}    panel_login_cookie
+
+delete account
+    db_delete_user_no_prefix    tester

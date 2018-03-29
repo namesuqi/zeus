@@ -1,0 +1,440 @@
+*** Settings ***
+Documentation     Boss外部接口-客户API
+...
+...               上游 : 获取日活信息
+Library           ../../../../lib/response/parse_response.py
+Library           ../../../../lib/response/verify_response.py
+Variables         ../../../../lib/constant/request.py
+Library           ../../../../lib/interface/boss/external_api.py
+Library           ../../../../lib/interface/boss/api_data.py
+Library           ../../../../lib/interface/boss/extra_function.py
+Variables         ../../../../lib/interface/boss/api_constant.py
+
+*** Test Cases ***
+one_datum_ok
+    [Documentation]    验证 : 请求单条历史数据时(即start_day=end_day), 会返回200和对应的data信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Up Activity Info Data    ${CUSTOMER_ID_1}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Should Be Equal    ${data}    ${data_check}
+
+many_data_ok
+    [Documentation]    验证 : 请求288条历史数据时, 会返回200和对应的data信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_LONG_AGO}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Up Activity Info Data    ${CUSTOMER_ID_1}    ${DATE_LONG_AGO}    ${DATE_YESTERDAY}
+    Should Be Equal    ${data}    ${data_check}
+
+today_ok
+    [Documentation]    验证 : 请求当天数据时, 会返回200和补0的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_TODAY}    ${DATE_TODAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Up Activity Info Data    ${CUSTOMER_ID_1}    ${DATE_TODAY}    ${DATE_TODAY}
+    Should Be Equal    ${data}    ${data_check}
+
+special_day_ok
+    [Documentation]    验证请求特殊日期时(如 "2016-02-29"), 会返回200和对应的data信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${SPECIAL_DATE}    ${SPECIAL_DATE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Up Activity Info Data    ${CUSTOMER_ID_1}    ${SPECIAL_DATE}    ${SPECIAL_DATE}
+    Should Be Equal    ${data}    ${data_check}
+
+date_special_format_ok
+    [Documentation]    验证 : 请求参数start_day&end_day不是完全符合"yyyy-mm-dd"格式时(月日的首位为0时省略, 如"2017-3-1"), 会返回200和对应的data信息
+    [Tags]    boss_external_api
+    : FOR    ${date}    IN    @{DATE_SPECIAL_FORMAT_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${date}    ${date}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Up Activity Info Data    ${CUSTOMER_ID_1}    ${date}    ${date}
+    \    Should Be Equal    ${data}    ${data_check}
+
+access_key_empty
+    [Documentation]    验证 : 请求参数api_access_key为""时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_none
+    [Documentation]    验证 : 请求参数api_access_key为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${None}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_missing
+    [Documentation]    验证 : 请求参数api_access_key字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_invalid
+    [Documentation]    验证 : 请求参数api_access_key不存在, 或包含非法字符时, 能正常响应, 返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_type_number
+    [Documentation]    验证 : 请求参数api_access_key为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+timestamp_none
+    [Documentation]    验证 : 请求参数timestamp为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${None}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_missing
+    [Documentation]    验证 : 请求参数timestamp字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}    ${1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_invalid
+    [Documentation]    验证 : 请求参数timestamp不为正整数时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${timestamp_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${timestamp_invalid}    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_access_key_another_customer
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_access_key为其他客户的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_secret_key_another_customer
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key为其他客户的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_timestamp_not_match
+    [Documentation]    验证 : 请求参数sign在加密前使用的timestamp与请求参数timestamp不一致时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${NUMBER}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_key_another_customer
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key与加密前的api_access_key同为其他客户的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+internal_key
+    [Documentation]    验证 : 请求参数sign与参数api_access_key都为内部接口的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+sign_none
+    [Documentation]    验证 : 请求参数sign为None时, 会返回400
+    [Tags]    boss_external_api
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${None}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_missing
+    [Documentation]    验证 : 请求参数sign字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}    ${2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_length_not_match
+    [Documentation]    验证 : 请求参数sign不为三十二位时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_LENGTH_INCORRECT_LIST}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_invalid
+    [Documentation]    验证 : 请求参数sign为三十二位字符串, 但包含非法字符时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_INVALID_LIST}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_type_number
+    [Documentation]    验证 : 请求参数sign为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+start_day_none
+    [Documentation]    验证 : 请求参数start_day为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${None}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+start_day_missing
+    [Documentation]    验证 : 请求参数start_day字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}    ${3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+start_day_invalid
+    [Documentation]    验证 : 请求参数start_day不是"yyyy-mm-dd"格式时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${start_day_invalid}    IN    @{DATE_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${start_day_invalid}    ${STATIC_DATE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+
+start_day_not_exist
+    [Documentation]    验证 : 请求参数start_day是"yyyy-mm-dd"格式, 但不是有效的日期时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${start_day_invalid}    IN    @{DATE_NOT_EXIST_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${start_day_invalid}    ${STATIC_DATE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+
+end_day_none
+    [Documentation]    验证 : 请求参数end_day为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${None}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+end_day_missing
+    [Documentation]    验证 : 请求参数end_day字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_YESTERDAY}    ${DATE_YESTERDAY}    ${4}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+end_day_invalid
+    [Documentation]    验证 : 请求参数end_day不是"yyyy-mm-dd"格式时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${end_day_invalid}    IN    @{DATE_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${STATIC_DATE}    ${end_day_invalid}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+
+end_day_not_exist
+    [Documentation]    验证 : 请求参数end_day是"yyyy-mm-dd"格式, 但不是有效的日期时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${end_day_invalid}    IN    @{DATE_NOT_EXIST_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${STATIC_DATE}    ${end_day_invalid}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+
+start_day_larger
+    [Documentation]    验证 : 请求参数start_day>end_day时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_TODAY}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+
+end_day_future
+    [Documentation]    验证 : 请求参数end_day为未来时间时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_TOMORROW}    ${DATE_TOMORROW}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+
+too_many_data
+    [Documentation]    验证 : 请求参数end_day-start_day<31天, 即一次请求超过31条记录时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Activity Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${DATE_TOO_LONG_AGO}    ${DATE_YESTERDAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_INTERVAL_TOO_LONG}

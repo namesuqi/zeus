@@ -1,0 +1,98 @@
+*** Settings ***
+Library           ../../../lib/interface/cp/p2p_ops.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/host.py
+Library           ../../../lib/response/verify_response.py
+
+*** Test Cases ***
+leave_ok
+    [Documentation]    成功清退指定LF
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${PEER_ID}
+    status code should be equal    ${response}    200
+    error code should be equal    ${response}    None
+
+peer_list_ok
+    [Documentation]    通过PEER_LIST成功清退指定雷锋列表
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${PEER_LIST}
+    status code should be equal    ${response}    200
+    error code should be equal    ${response}    None
+
+peer_id_invalid
+    [Documentation]    发送无效PEER_ID的清退LF请求，服务器返回400
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${PEER_ID_INVALID}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+peer_list_mix_invalid
+    [Documentation]    发送掺杂有无效PEER_ID的PEER_LIST的清退指定LF请求，服务器返回400
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${PEER_LIST_MIX}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+file_not_exist
+    [Documentation]    发送带有不存在FILE_URL的清退指定LF请求，服务器返回500和E_CHANNEL_NOT＿EXIST
+    ...    ops只检查file_url是否存在，不校验其格式，file_url不存在时返回500和E_CHANNEL_NOT_EXIST
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL_NOT_EXIST}    ${PEER_ID}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    E_CHANNEL_NOT_EXIST
+
+file_url_invalid
+    [Documentation]    发送带有非法FILE_URL的清退LF请求时，返回500和E_CHANNEL_NOT＿EXIST
+    ...    ops只检查file_url是否存在，不校验其格式，file_url不存在时返回500和E_CHANNEL_NOT_EXIST
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL_INVALID}    ${PEER_ID}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    E_CHANNEL_NOT_EXIST
+
+peer_id_empty
+    [Documentation]    发送PEER_ID为空字符串的清退指定LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${EMPTY}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+file_url_all_zero
+    [Documentation]    发送FILE_URL全0的清退指定LF请求时，返回500和E_CHANNEL_NOT_EXIST
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL_ALL_ZERO}    ${PEER_ID}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    E_CHANNEL_NOT_EXIST
+
+peerid_missing
+    [Documentation]    发送PEER_ID参数缺失的清退指定LF请求，返回400
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${EMPTY}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+file_url_missing
+    [Documentation]    发送FILE_URL参数缺失的请求，返回400
+    [Tags]    ops
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}    ${PEER_ID}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+stun_hub_negative
+    [Documentation]    发送清退指定LF请求，STUN_HUB拒绝访问时，返回500和ETIMEOUT
+    [Tags]    ops_wait
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_DROP_STUN_IN}
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_DROP_STUN_OUT}
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${PEER_ID}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    ETIMEDOUT
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_F}
+
+channel_negative
+    [Documentation]    发送清退指定LF请求时，CHANNEL拒绝访问时，返回500和ETIMEOUT
+    [Tags]    ops_wait
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_DROP_CHAN}
+    ${response}    Ops Leave Lf    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${PEER_ID}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    ETIMEDOUT
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_F}

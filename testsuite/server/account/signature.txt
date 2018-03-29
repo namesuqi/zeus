@@ -1,0 +1,74 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/business/Account.py
+
+*** Test Cases ***
+SignatureMatch
+    [Documentation]    Target：验证在delay≤15min且用户名和密码等信息正确时，校验能够通过
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_LEIGANG}    ${PASSWD_LEIGANG}
+    ...    md5    0    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+PasswordIncorrect
+    [Documentation]    Target：验证当password错误时，返回E_SIGNATURE_NOT_MATCHED
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_LEIGANG}    ${PASSWD_LEIGANG_WRONG}
+    ...    md5    0    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_SIGNATURE_NOT_MATCHED
+
+UsernameIncorrect
+    [Documentation]    Target：验证当username错误时，返回E_INVALID_USERNAME
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_NOT_EXIST}    ${PASSWD_NOT_EXIST}
+    ...    md5    0    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_INVALID_USERNAME
+
+Date14MinutesLater
+    [Documentation]    Target：验证当delay≤15min时，能够根据signature和username校验传输
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_LEIGANG}    ${PASSWD_LEIGANG}
+    ...    md5    14    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+Date14MinutesBefore
+    [Documentation]    Target：验证当delay≤15min时，能够根据signature和username校验传输
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_LEIGANG}    ${PASSWD_LEIGANG}
+    ...    md5    -14    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+Date16MinutesLater
+    [Documentation]    Target：验证当delay>15min时，返回E_REQUEST_EXPIRED
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_LEIGANG}    ${PASSWD_LEIGANG}
+    ...    md5    16    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_REQUEST_EXPIRED
+
+Date16MinutesBefore
+    [Documentation]    Target：验证当delay>15min时，返回E_REQUEST_EXPIRED
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    ${USER_LEIGANG}    ${PASSWD_LEIGANG}
+    ...    md5    -16    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_REQUEST_EXPIRED
+
+NoUsername
+    [Documentation]    Target：验证当用户名为空时，返回E_PARAM_MISSING
+    [Tags]    account
+    ${response}    AccountSignature    ${HTTP}    ${ACCOUNT_HOST}    ${ACCOUNT_PORT}    \    ${PASSWD_LEIGANG}
+    ...    md5    0    data1    data2    data3
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_PARAM_MISSING

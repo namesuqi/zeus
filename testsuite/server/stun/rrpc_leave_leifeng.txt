@@ -1,0 +1,68 @@
+*** Settings ***
+Documentation     验证集群化stun-srv的8000端口关闭, 不再接受反向控制雷锋的请求
+Default Tags
+Test Timeout      25 seconds
+Variables         ../../../lib/interface/cp/stun_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/stun_server.py
+Library           ../../../lib/database/redis_handler.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+leave_one_ok
+    [Tags]    stun_rrpc
+    [Setup]
+    ${response}    Leave Leifeng    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_ONLINE}
+    Status Code Should Be Equal    ${response}    404
+
+leave_many1_ok
+    [Tags]    old_stun_rrpc
+    [Setup]    add_stun_peer    ${PEER_IDS_MANY1}    ${PUB_IP1}    ${PUB_PORT1}    ${PRI_IP1}    ${PRI_PORT1}    ${NAT_TYPE1}}
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_IDS_MANY1}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+peer_ids_logout
+    [Tags]    old_stun_rrpc
+    [Setup]
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_LOGOUT}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+peer_ids_invalid
+    [Tags]    old_stun_rrpc
+    [Setup]
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_INVALID}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+peer_ids_missing
+    [Tags]    old_stun_rrpc
+    [Setup]
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_ID_MISSING}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+file_id_invalid
+    [Tags]    old_stun_rrpc
+    [Setup]    add_stun_peer    ${PEER_ID_ONLINE}    ${PUB_IP1}    ${PUB_PORT1}    ${PRI_IP1}    ${PRI_PORT1}    ${NAT_TYPE1}}
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID_INVALID}    ${PEER_ID_ONLINE}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+file_id_missing
+    [Tags]    old_stun_rrpc
+    [Setup]    add_stun_peer    ${PEER_ID_ONLINE}    ${PUB_IP1}    ${PUB_PORT1}    ${PRI_IP1}    ${PRI_PORT1}    ${NAT_TYPE1}}
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    \    ${PEER_ID_ONLINE}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+peer_ids_mix_invalid
+    [Tags]    old_stun_rrpc
+    [Setup]    add_stun_peer    @{PEER_IDS_MIX}[0]    ${PUB_IP1}    ${PUB_PORT1}    ${PRI_IP1}    ${PRI_PORT1}    ${NAT_TYPE1}}
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_IDS_MIX}
+    Should Be Equal    ${response}    CONNECT_FAIL
+
+peer_ids_mix_logout
+    [Tags]    old_stun_rrpc
+    [Setup]    Run Keywords    add_stun_peer    @{PEER_IDS_MANY2}[0]    ${PUB_IP1}    ${PUB_PORT1}    ${PRI_IP1}    ${PRI_PORT1}    ${NAT_TYPE1}}    AND    add_stun_peer
+    ...    @{PEER_IDS_MANY2}[1]    ${PUB_IP1}    ${PUB_PORT1}    ${PRI_IP1}    ${PRI_PORT1}    ${NAT_TYPE1}}
+    ${response}    Connect Rrpc Leave    ${HTTP}    ${STUN_CLOSE_8000_HOST}    ${STUN_PORT_8000}    ${FILE_ID}    ${PEER_IDS_MANY2}
+    Should Be Equal    ${response}    CONNECT_FAIL

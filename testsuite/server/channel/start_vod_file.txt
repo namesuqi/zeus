@@ -1,0 +1,221 @@
+*** Settings ***
+Documentation     由于该接口目前基本不使用, 暂时先将有自动注册流程的case的tag改为channel_vod
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/channel_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/channel_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+start_channel_ok
+    [Documentation]    目标：验证当参数都正确时, Channel-srv会返回200和文件信息
+    ...
+    ...    前提 : mysql中有该信息
+    [Tags]    regression    old_channel
+    [Setup]
+    @{file_info}    Db Get Info By Source Url    ${URL_FLV}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_FLV}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${file_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${file_url}    @{file_info}[2]
+    [Teardown]
+
+start_channel_user_empty
+    [Documentation]    目标：验证当user为空时, Channel-srv会返回400
+    [Tags]    regression    old_channel
+    [Setup]
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${EMPTY}    ${PID}
+    ...    ${URL_FLV}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    [Teardown]
+
+start_channel_pid_empty
+    [Documentation]    目标：验证当pid为空时, Channel-srv会返回400
+    [Tags]    regression    old_channel
+    [Setup]
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${EMPTY}
+    ...    ${URL_FLV}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    [Teardown]
+
+start_channel_pid_not_login
+    [Documentation]    目标：验证当pid不在线时, Channel-srv会返回200和正确的信息(暂时只对pid的格式做检验)
+    ...
+    ...    前提 : mysql中有该信息
+    [Tags]    regression    old_channel
+    [Setup]
+    @{file_info}    Db Get Info By Source Url    ${URL_FLV}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_FLV}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${file_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${file_url}    @{file_info}[2]
+    [Teardown]
+
+start_channel_pid_invalid
+    [Documentation]    目标：验证当pid非法(非32位十六进制字符串)时, Channel-srv会返回400
+    [Tags]    regression    old_channel
+    [Setup]
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID_INVAILD}
+    ...    ${URL_FLV}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    [Teardown]
+
+start_channel_url_empty
+    [Documentation]    目标：验证当url为空时, Channel-srv会返回400
+    [Tags]    regression    old_channel
+    [Setup]
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    [Teardown]
+
+start_channel_url_like_m3u8
+    [Documentation]    目标：验证当url携带的文件类型为m3u8且MySQL中存在该m3u8文件时, Channel-srv会返回200和E_SOURCE_TYPE
+    ...
+    ...    前提 : mysql中有该信息
+    [Tags]    regression    old_channel
+    [Setup]
+    ${file_info}    Db Get Info By Source Url    ${URL_M3U8}
+    Should Not Be Empty    ${file_info}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_M3U8}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_SOURCE_TYPE
+    [Teardown]
+
+start_channel_user_error
+    [Documentation]    目标：验证当MySQL中有该url信息, 但user与url不对应时, Channel-srv会返回200和正确的信息
+    ...
+    ...    前提 : mysql中有该信息
+    [Tags]    regression    old_channel
+    [Setup]
+    @{file_info}    Db Get Info By Source Url    ${URL_FLV}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_THUNDER}    ${PID}
+    ...    ${URL_FLV}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${file_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${file_url}    @{file_info}[2]
+    [Teardown]
+
+start_channel_user_not_exist
+    [Documentation]    目标：验证当MySQL中没有该url信息, 但有url域名对应的tenant信息, 且MySQL中该user不存在时, 会返回200 \ E_AUTH_FAILED
+    ...
+    ...    前提 : mysql中没有该信息
+    ...
+    ...    注意 : 确认没有写进信息
+    [Tags]    regression    old_channel
+    [Setup]
+    Db Delete File By Url    ${URL_FLV_UNREG}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_INVAILD}    ${PID}
+    ...    ${URL_FLV_UNREG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_info}    Db Get Info By Source Url    ${URL_FLV_UNREG}
+    Should Be Empty    ${file_info}
+    [Teardown]
+
+start_channel_tenant_not_exist
+    [Documentation]    目标：验证当MySQL没有该url信息, 也没有url域名对应的tenant信息, 但该url可访问时, 会返回200 E_AUTH_FAILED
+    ...
+    ...    前提 : mysql中没有该信息
+    [Tags]    regression    old_channel
+    [Setup]
+    Db Delete File By Url    ${URL_NOT_OURS}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_NOT_OURS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_info}    Db Get Info By Source Url    ${URL_NOT_OURS}
+    Should Be Empty    ${file_info}
+    [Teardown]
+
+start_channel_auth_pass
+    [Documentation]    目标：验证当MySQL中没有该url信息, \ 但该url可访问, 且user与url域名对应的tenant一致时, Dir将自动注册信息写进MySQL中, 并返回200和正确的信息
+    ...
+    ...    前提 : mysql中没有该信息
+    ...
+    ...    注意 : 确认写进mysql中, 并在用例执行后清除信息
+    [Tags]    regression    old_channel
+    [Setup]
+    Db Delete File By Url    ${URL_FLV_UNREG}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_FLV_UNREG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${URL_FLV_UNREG}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${file_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${file_url}    @{file_info}[2]
+    Db Delete File By Url    ${URL_FLV_UNREG}
+    [Teardown]
+
+start_channel_auth_failed
+    [Documentation]    目标：验证当MySQL中没有该url信息, 但该url可访问, 且user与url域名对应的tenant不一致时, Dir不会将信息写进MySQL中, 且会返回200 E_AUTH_FAILED
+    ...
+    ...    前提 : mysql中没有该信息
+    ...
+    ...    注意 : 确认没有写进mysql中
+    [Tags]    regression    old_channel
+    [Setup]
+    Db Delete File By Url    ${URL_FLV_UNREG}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_THUNDER}    ${PID}
+    ...    ${URL_FLV_UNREG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Cover    ${response}    E_REGISTERING    E_AUTH_FAILED
+    ${file_info}    Db Get Info By Source Url    ${URL_FLV_UNREG}
+    Should Be Empty    ${file_info}
+    [Teardown]
+
+start_channel_url_not_exist
+    [Documentation]    目标：验证当该url不存在时, 会返回200 E_AUTH_FAILED
+    [Tags]    regression    old_channel
+    [Setup]
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_INVAILD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_info}    Db Get Info By Source Url    ${URL_INVAILD}
+    Should Be Empty    ${file_info}
+    [Teardown]
+
+start_channel_url_like_m3u8_unreg
+    [Documentation]    目标：验证当url携带的文件类型为m3u8且MySQL中不存在该m3u8文件时, Channel-srv会返回200和E_SOURCE_TYPE
+    ...
+    ...    前提 : mysql中没有该信息
+    [Tags]    regression    old_channel
+    [Setup]
+    Db Delete File By Url    ${URL_M3U8_UNREG}
+    ${response}    Channel Start Channel    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_VOD}    ${PID}
+    ...    ${URL_M3U8_UNREG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_SOURCE_TYPE
+    [Teardown]

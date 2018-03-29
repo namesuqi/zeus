@@ -1,0 +1,128 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+
+*** Test Cases ***
+lsm_report_not_login
+    [Documentation]    目标：验证未登录peer能成功汇报本地缓存
+    [Tags]    report_old    regression
+    [Setup]    Peer Logout    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID3}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID3}    ${VOD_FILE_ID}
+    ...    ${PPC}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_TS_NOT_LOGIN
+
+lsm_report_ok
+    [Documentation]    目标：验证已登录peer能成功汇报本地缓存
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_ppc0_ok
+    [Documentation]    目标：验证已登录peer能成功汇报本地缓存
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC_0}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_ppc303_ok
+    [Documentation]    目标：验证已登录peer能成功汇报本地缓存
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC_303}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_optional
+    [Documentation]    目标：验证已登录peer,使可选项为空,能成功汇报本地缓存
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC}    ${SLICEMAP}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_invalid_PEER_ID
+    [Documentation]    目标：验证使用无效的PEER_ID进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID_INVALID}    ${VOD_FILE_ID}
+    ...    ${PPC}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_invalid_FILE_ID
+    [Documentation]    目标：验证使用无效的FILE_ID进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${FILE_ID_INVALID}
+    ...    ${PPC}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_negative_ppc
+    [Documentation]    目标：验证使用无效的ppc(-1)进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC_INVALID_1}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_invalid_ppc
+    [Documentation]    目标：验证使用无效的ppc(304)进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC_INVALID_2}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_invalid_slice_map
+    [Documentation]    目标：验证使用无效的slicemap进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC}    ${SLICEMAP_INVALID}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_no_FILE_ID
+    [Documentation]    目标：验证缺失FILE_ID进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${EMPTY}
+    ...    ${PPC}    ${SLICEMAP}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+lsm_report_no_slice_map
+    [Documentation]    目标：验证缺失slicemap进行汇报时，返回400
+    [Tags]    report_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Lsm Report    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}    ${VOD_FILE_ID}
+    ...    ${PPC}    ${EMPTY}    ${LSMSIZE}    ${UNIVERSE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None

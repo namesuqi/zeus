@@ -1,0 +1,59 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/channel_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/channel_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+Library           ../../../lib/database/redis_handler.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+
+*** Test Cases ***
+pid_ok
+    [Documentation]    当Pid正确的时候，返回200
+    [Tags]    fast_reg
+    ${response}    channel_sdk_get_p2p    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${PID_END_FF}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+start_live_flv_pid_not_login
+    [Documentation]    目标：验证当pid不在线时, Channel-srv会返回200和文件信息(暂时只对pid的格式做检验)
+    ...
+    ...    前提 : redis中有该信息
+    [Tags]    fast_reg
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_LIVE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${LIVE_FILE_ID}
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal    ${file_url}    ${URL_LIVE}
+
+start_live_flv_url_invalid
+    [Documentation]    目标：验证当url非法(非"http://…/..."的格式)时, Channel-srv会返回200 E_NOT_FOUND
+    [Tags]    fast_reg
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_LIVE}    ${PID}
+    ...    ${URL_INVAILD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_FOUND
+    ${file_info}    Operate File Url    get    ${URL_INVAILD}
+    Should Be Equal As Strings    ${file_info}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None
+
+start_live_flv_auth_failed1
+    [Documentation]    目标：验证当user与tenant不一致时, Channel-srv直接返回200 E_AUTH_FAILED
+    ...
+    ...    前提 :
+    [Tags]    fast_reg
+    ${response}    Channel Start Live Flv    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_PORT}    ${USER_THUNDER}    ${PID}
+    ...    ${URL_LIVE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_AUTH_FAILED
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal As Strings    ${file_id}    None

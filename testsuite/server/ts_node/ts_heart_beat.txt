@@ -1,0 +1,39 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/response/parse_response.py
+
+*** Test Cases ***
+ts_heart_beat_ok
+    [Documentation]    目标：验证已登录peer能成功汇报心跳
+    [Tags]    ts_node    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Heartbeat    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}
+
+ts_heart_beat_not_login
+    [Documentation]    目标：验证未登录peer进行heartbeat时返回E_TS_NOT_LOGIN
+    [Tags]    ts_node    regression
+    [Setup]    Peer Logout    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}
+    ${response}    Peer Heartbeat    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_TS_NOT_LOGIN
+
+ts_heart_beat_invalid_peer_id
+    [Documentation]    目标：验证使用无效的peer_id进行heartbeat时，返回400
+    ...    peer_id是128位UUID，使用HEX编码。否则无效
+    [Tags]    ts_node    regression
+    ${response}    Peer Heartbeat    ${HTTP}    ${TS_NODE_HOST}    ${TS_NODE_PORT}    ${PEER_ID_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Empty    ${response_body}

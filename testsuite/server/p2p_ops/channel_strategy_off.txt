@@ -1,0 +1,61 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/p2p_ops.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/kafka_handler.py
+
+*** Test Cases ***
+channel_one_off
+    [Documentation]    验证关闭一个频道直播策略，ops可将对应消息写入kafka
+    [Tags]    ops
+    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${response}    Channel Strategy Off    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_ID_0}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    sleep    5
+    @{result_kafka}    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${kafka_logs_count}    Get Length    ${result_kafka}
+    Should Be Equal As Numbers    ${kafka_logs_count}    1
+    log    @{result_kafka}[0]
+
+channel_list_off
+    [Documentation]    验证同时关闭多个频道直播策略，ops可将多条对应消息写入kafka
+    [Tags]    ops
+    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${response}    Channel Strategy Off    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_ID_LIST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    sleep    5
+    @{result_kafka}    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${kafka_logs_count}    Get Length    ${result_kafka}
+    ${files_count}    Get Length    ${FILE_ID_LIST}
+    Should Be Equal As Numbers    ${kafka_logs_count}    ${files_count}
+
+file_id_invalid
+    [Documentation]    验证参数非法时，ops可返回400和E_PARAM_FORMAT_INCORRECT
+    [Tags]    ops
+    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    sleep    5
+    : FOR    ${file_id_invalid}    IN    @{FILE_ID_INVALID_LIST}
+    \    ${response}    Channel Strategy Off    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${file_id_invalid}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    E_PARAM_FORMAT_INCORRECT
+    @{result_kafka}    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${kafka_logs_count}    Get Length    ${result_kafka}
+    Should Be Equal As Numbers    ${kafka_logs_count}    0
+
+file_id_missing
+    [Documentation]    验证参数缺失时，ops可返回400和E_PARAM_MISSING
+    [Tags]    ops
+    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    sleep    5
+    ${response}    Channel Strategy Off    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+    @{result_kafka}    Kafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_CHANNEL_SWITCH}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${kafka_logs_count}    Get Length    ${result_kafka}
+    Should Be Equal As Numbers    ${kafka_logs_count}    0

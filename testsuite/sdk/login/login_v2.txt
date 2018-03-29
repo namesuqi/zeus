@@ -1,0 +1,112 @@
+*** Settings ***
+Suite Setup       Upload Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+Library           ../../../lib/sdk/common_tool/sdk_handle.py    #Suite Teardown    Remove Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+Library           ../../../lib/sdk/common_tool/specific_handle.py
+Library           ../../../lib/sdk/common_tool/verify_handle.py
+Variables         ../../../lib/constant/sdk.py
+
+*** Test Cases ***
+SdkNotLogin
+    [Documentation]    Target：Validate E_TS_NOT_LOGIN
+    ...
+    ...    Delete： E_TS_NOT_LOGIN启动后切换迅速，已无法通过远程调用捕获，而且testlink不存在该用例。(2017.1.12)
+    [Tags]
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Should Be Equal    ${status}    E_TS_NOT_LOGIN
+
+SdkLoginOK
+    [Documentation]    Target：Validate E_TS_NOT_LOGIN
+    [Tags]    sdk_login
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Should Be Equal    ${status}    E_OK
+
+SdkVersionCorrect
+    [Documentation]    Target：Validate E_TS_NOT_LOGIN
+    [Tags]    sdk_login
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/version
+    ${version}    Get Json Value    ${response_text}    core
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Log Many    "SDK VERSION IS :"    ${version}
+
+Login_Request
+    [Documentation]    testlink tc-13
+    [Tags]    sdk_login
+    Start Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    eth0
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Should Be Equal    ${status}    E_OK
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    ${data_correct}    Verify Sdk Http Request    /session/peers/    POST    publicIP    version    macs
+    ...    stunIP    privatePort    deviceInfo    natType    publicPort    privateIP
+    Should Be True    ${data_correct}
+
+Login_Retry
+    [Documentation]    testlink tc-4
+    [Tags]    sdk_login
+    Execute Command    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    iptables -I OUTPUT -d ts.cloutropy.com -j DROP
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    ${last_login_1}    Get Json Value    ${response_text}    last_login
+    Should Be Equal    ${status}    E_TS_NOT_LOGIN
+    Sleep    11
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${last_login_2}    Get Json Value    ${response_text}    last_login
+    Should Not Be Equal    ${last_login_1}    ${last_login_2}
+    Execute Command    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    iptables -D OUTPUT -d ts.cloutropy.com -j DROP
+    Sleep    11
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Should Be Equal    ${status}    E_OK
+
+Login_HeartBeat
+    [Documentation]    testlink tc-12
+    ...
+    ...    为确保确实能够抓到heartbeat请求，用例执行时间约18分钟(15分钟用于等待请求发送)
+    [Tags]    sdk_login
+    Start Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    eth0    1    0
+    ...    900000
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Should Be Equal    ${status}    E_OK
+    Sleep    900
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    ${data_correct}    Verify Sdk Http Request    /session/peers/    GET
+    Should Be True    ${data_correct}
+
+NotLogin_NoHeartBeat
+    [Documentation]    testlink tc-129
+    ...
+    ...    6分钟内无heartbeat请求发出
+    [Tags]    sdk_login
+    Execute Command    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    iptables -I OUTPUT -d ts.cloutropy.com -j DROP
+    Start Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    eth0    1    0
+    ...    900000
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Should Be Equal    ${status}    E_TS_NOT_LOGIN
+    Sleep    360
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Execute Command    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    iptables -D OUTPUT -d ts.cloutropy.com -j DROP
+    ${data_correct}    Verify Sdk Http Request    /session/peers/    GET
+    Should Not Be True    ${data_correct}

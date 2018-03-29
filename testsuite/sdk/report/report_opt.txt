@@ -1,0 +1,81 @@
+*** Settings ***
+Suite Setup       Upload Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+Library           ../../../lib/sdk/common_tool/sdk_handle.py    #Suite Teardown    Remove Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+Library           ../../../lib/sdk/common_tool/specific_handle.py
+Library           ../../../lib/sdk/common_tool/verify_handle.py
+Variables         ../../../lib/constant/sdk.py
+
+*** Test Cases ***
+Report_Opt_Log_Play
+    [Documentation]    获取到包含 PLay 步骤的sdk http汇报日志(NetworkMonitor.log)
+    [Tags]    sdk_report
+    Start Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    eth0    1    0
+    ...    600000
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Sleep    180
+    Play    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    540
+    Stop Play    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Should Be Equal    ${status}    E_OK
+
+Report_Opt_ReportDefault_rtt
+    [Documentation]    testlink tc-369
+    ...
+    ...    检查opt report确实发送并对比其发送body与文档相对应
+    ...    文档中的id，connections， accept_streams， denied_streams占时未实现，先不作校验
+    ...    depend on: Report_Opt_Log_Play
+    [Tags]    sdk_report
+    Remove Network Monitor Log
+    ${data_correct}    Verify Sdk Http Request    /sdk/opt_report/v1    POST    timestamp    peer_id    nat_type
+    ...    duration    req_rtt    penetrate_stats
+    ${req_rtt_correct}    Verify Sdk Http Request Sublist Dict    req_rtt    domain    ip    rtt
+    ${penetrate_stats_correct}    Verify Sdk Http Request Sublist Dict    penetrate_stats    0    1    2    3
+    ...    4    5    6
+    Should Be True    ${data_correct}
+    Should Be True    ${req_rtt_correct}
+
+Report_Opt_ReportNormalDomain_Related
+    [Documentation]    testlink tc-374
+    ...    httpdns 公网ip被禁用
+    ...
+    ...    depend on: Report_Opt_Log_Play
+    [Tags]    sdk_report
+    @{domain_list}    Get Sdk Http Request Sublist Dict Value    /sdk/opt_report/v1    POST    req_rtt    domain
+    Should Contain    ${domain_list}    ts.cloutropy.com
+    Should Contain    ${domain_list}    report.cloutropy.com
+    Should Contain    ${domain_list}    errlogs.cloutropy.com
+    Should Contain    ${domain_list}    live-ch.cloutropy.com
+    Should Contain    ${domain_list}    seeds.cloutropy.com
+    Should Contain    ${domain_list}    stats.cloutropy.com
+
+Report_Opt_ReportNormal_Collect_FirstTime
+    [Documentation]    testlink tc-384
+    [Tags]    sdk_report
+    Remove Network Monitor Log
+    Start Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    eth0    1    0
+    ...    600000
+    Start Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    15
+    ${response_text}    Get Sdk Dashboard    ${SDK1_IP}    ${SDK1_DASH_BOARD_PORT}    /ajax/login
+    ${status}    Get Json Value    ${response_text}    status
+    Sleep    600
+    Stop Play    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    @{not_play_domain_list}    Get Sdk Http Request Sublist Dict Value    /sdk/opt_report/v1    POST    req_rtt    domain
+    Sleep    10
+    Start Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    eth0    1    0
+    ...    600000
+    Remove Network Monitor Log
+    Play    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}    ${SDK_PATH}
+    Sleep    600
+    Stop Play    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Sdk    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    Stop Capture    ${SDK1_IP}    ${SDK1_USER}    ${SDK1_PASSWORD}
+    @{play_domain_list}    Get Sdk Http Request Sublist Dict Value    /sdk/opt_report/v1    POST    req_rtt    domain
+    Should Be Equal    ${status}    E_OK
+    :FOR    ${i}    IN RANGE    3
+    \    should not contain    ${play_domain_list}    @{not_play_domain_list}[${i}]

@@ -1,0 +1,29 @@
+*** Settings ***
+Library           ../../../lib/business/Live.py
+
+*** Test Cases ***
+IDCSeedStart
+    [Documentation]
+    [Tags]    start_idc
+    InitSdkNumForIDC
+    StopSdkForIDC
+    StartSdkForIDC
+
+IDCSeedRestart
+    [Documentation]
+    [Tags]    restart_idc
+    InitSdkNumForIDC
+    StopSdkForIDC
+    StartSdkForIDC
+
+IDCSeedStop
+    [Documentation]
+    [Tags]    stop_idc
+    InitSdkNumForIDC
+    StopSdkForIDC
+
+IDCSeedStopSome
+    [Documentation]
+    [Tags]    stop_some_idc
+    InitKillSdkNumForIDC
+    StopSomeSdkForIDC

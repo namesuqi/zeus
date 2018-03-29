@@ -1,0 +1,2 @@
+*** Settings ***
+Documentation     计费模块相关的内部接口

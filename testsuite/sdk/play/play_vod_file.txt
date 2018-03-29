@@ -1,0 +1,24 @@
+*** Settings ***
+Library           ../../../lib/business/sdk_dash_board.py
+Library           Collections
+Library           HttpLibrary.HTTP
+Variables         ../../../lib/constant/sdk.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/constant/account.py
+Library           Remote    http://${SDK1_IP}:${REMOTE_AGENT_PORT}    WITH NAME    Sdk1Remote
+
+*** Test Cases ***
+SdkPlayVodVideoOK
+    [Documentation]    Target：Validate that sdk can play vod video file
+    Sdk1Remote.RestartSDK
+    Sleep    15
+    ${login}    GetLogin
+    ${status}    Get Json Value    ${login}    /status
+    Log Many    "Login Status is: "    ${status}
+    Should Be Equal    ${status}    "E_OK"
+    Sdk1Remote.StartVod    ${BYTE_DISTRICT}    ${ICNTV_CDN_URL}    ${USER_CNTV}
+    Sdk1Remote.StartCdn    ${BYTE_DISTRICT}    ${ICNTV_CDN_URL}
+    Sleep    5
+    ${sdk_file_md5}    Sdk1Remote.GetFileMd5    vod.file
+    ${cdn_file_md5}    Sdk1Remote.GetFileMd5    cdn.file
+    Should Be Equal    ${sdk_file_md5}    ${cdn_file_md5}

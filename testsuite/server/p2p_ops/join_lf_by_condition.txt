@@ -1,0 +1,168 @@
+*** Settings ***
+Library           ../../../lib/interface/cp/p2p_ops.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/host.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/redis_cluster.py
+Library           ../../../lib/interface/cp/tracker_server.py
+
+*** Test Cases ***
+join_ok
+    [Documentation]    发送按条件拉取LF，返回200和期望json
+    ...    由于redis数据库游标机制需要配合手工测试校验第二个返回值
+    [Tags]    ops
+    [Setup]
+    Cluster Delete Keys    PNIC_
+    Cluster Delete Keys    FOSC_
+    : FOR    ${i}    IN RANGE    int(6)
+    \    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_LIST}[${i}]    ${VERSION}
+    \    ...    ${NAT_TYPE}    ${PUBLIC_IP_100017}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    ${need}    Get Response Data By Path    ${response}    ${JSON_NEED_JOIN}
+    ${useable}    Get Response Data By Path    ${response}    ${JSON_USEABLE}
+    status code should be equal    ${response}    200
+    error code should be equal    ${response}    None
+    should be equal as strings    ${need}    6
+    Cluster Delete Keys    PNIC_
+    Cluster Delete Keys    FOSC_
+
+file_not_exist
+    [Documentation]    发送file url不存在的按条件拉取LF请求时，返回500和E_CHANNEL_NOT_EXIST
+    ...    ops只检查file_url是否存在，不校验其格式，file_url不存在时返回500和E_CHANNEL_NOT_EXIST
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL_NOT_EXIST}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    E_CHANNEL_NOT_EXIST
+
+count_symbol
+    [Documentation]    发送符号count的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT_INVALID_1}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+count_missing
+    [Documentation]    发送COUNT参数缺失的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${EMPTY}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+count_string
+    [Documentation]    发送字符串count的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT_INVALID_2}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+count_negnum
+    [Documentation]    发送负数count的按条件拉取LF时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT_INVALID_3}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+userid_invalid
+    [Documentation]    发送无效userid的按条件拉取LF请求，返回400
+    [Tags]    ops
+    @{user_id_list}    create list    ${USER_ID}    ${USER_ID_INVALID_1}    ${USER_ID_INVALID_2}    ${USER_ID_INVALID_3}    ${USER_ID_INVALID_4}
+    ...    ${USER_ID_INVALID_5}
+    : FOR    ${user_id_invalid}    IN    @{user_id_list}
+    \    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}
+    \    ...    ${ISP_100017}    ${USER_ID}    ${USER_ID_CORRECT}
+    \    status code should be equal    ${response}    400
+    \    error code should be equal    ${response}    None
+
+userid_missing
+    [Documentation]    发送userid缺失的按条件拉取LF请求时，返回200
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT}
+    status code should be equal    ${response}    200
+    error code should be equal    ${response}    None
+
+isp_negnum
+    [Documentation]    发送负数isp的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_INVALID_3}
+    ...    ${COUNT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+isp_string
+    [Documentation]    发送字符串isp的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_INVALID_2}
+    ...    ${COUNT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+isp_symbol
+    [Documentation]    发送符号isp的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_INVALID_1}
+    ...    ${COUNT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+isp_missing
+    [Documentation]    发送isp缺失的按条件拉取LF请求时，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${EMPTY}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+file_url_all_zero
+    [Documentation]    发送全零file_URL的按条件拉取LF请求时，返回500和E_CHANNEL_NOT_EXIST
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL_ALL_ZERO}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    E_CHANNEL_NOT_EXIST
+
+file_url_invalid
+    [Documentation]    ops只检查file_url是否存在，不校验其格式，file_url不存在时返回500和E_CHANNEL_NOT_EXIST
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL_INVALID}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    E_CHANNEL_NOT_EXIST
+
+file_url_missing
+    [Documentation]    发送file url缺失的按条件拉LF请求，返回400
+    [Tags]    ops
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    400
+    error code should be equal    ${response}    None
+
+stun_negative
+    [Documentation]    发送按条件拉取LF，stunhub拒绝访问时，返回
+    [Tags]    ops_wait
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_DROP_STUN_IN}
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_DROP_STUN_OUT}
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    200
+    error code should be equal    ${response}    None
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_F}
+
+channel_negative
+    [Documentation]    发送按条件拉取LF请求，channel拒绝访问时，返回500和ETIMEOUT
+    [Tags]    ops_wait
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_DROP_CHAN}
+    ${response}    Ops Join Lf By Condition    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${FILE_URL}    ${ISP_100017}
+    ...    ${COUNT}    ${USER_ID_CORRECT}
+    status code should be equal    ${response}    500
+    error code should be equal    ${response}    ETIMEDOUT
+    Ssh Command    ${P2P_OPS_HOST}    ${OPS_USER_NAME}    ${OPS_PASSWORD}    ${CMD_F}

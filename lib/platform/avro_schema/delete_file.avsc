@@ -1,0 +1,8 @@
+{
+    "type":"record",
+    "name":"delete_file",
+    "fields":[
+        {"name":"file_id","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

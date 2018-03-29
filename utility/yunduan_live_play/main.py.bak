@@ -1,0 +1,290 @@
+# coding=utf-8
+"""
+some preparations
+
+"""
+
+import paramiko
+import time
+import inspect
+import ConfigParser
+import os
+import sys
+
+file_path = os.path.abspath(inspect.getfile(sys.modules[__name__]))
+parent_path = os.path.dirname(file_path)
+
+REMOTE_SDK_PATH = '/home/admin/live'
+REMOTE_PLAYER_PATH = '/home/admin/player'
+SDK_FILE = 'liveclient_static'
+INI_FILE = 'host.ini'
+REMOTE_SDK_FILE_PATH = '/home/admin/live/liveclient_static'
+
+REMOTE_SDK = '{0}/{1}'.format(REMOTE_SDK_PATH, SDK_FILE)
+
+SDK_PORT_START = 60000
+SDK_PORT_STEP = 10
+SSH_PORT = 22
+SCP_COPY = False
+USERNAME = "admin"
+PASSWORD = "yzhxc9!"
+
+
+SDK_IP_LIST = []
+SDK_NUM_LIST = []
+SDK_USER_NAME_LIST = []
+SDK_PASSWORD_LIST = []
+CHANNEL_URL_LIST = []
+
+SDK_FILE_PATH = "{0}/{1}".format(parent_path, SDK_FILE)
+INI_FILE_PATH = "{0}/{1}".format(parent_path, INI_FILE)
+
+
+class RemotePlayer(object):
+    def __init__(self, ip, sdk_nums, url, local_sdk, username, password):
+        self.local_sdk = local_sdk
+        self.sdk_nums = sdk_nums
+        self.ip = ip
+        self.url = url
+        self.username = username
+        self.password = password
+        print [username, password]
+
+    def stop_play(self):
+        print "Stop play for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        ssh.exec_command("killall python")
+        ssh.close()
+
+    def stop_sdk(self):
+        # start sdk on remote machines and remove folder
+        print "Stop sdk for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        ssh.exec_command("killall {0}".format(SDK_FILE))
+        ssh.close()
+
+    def start_play(self):
+        # start sdk on remote machines and remove folder
+        print "Start play for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        for i in range(self.sdk_nums):
+            port = i * SDK_PORT_STEP + SDK_PORT_START
+            url = "http://127.0.0.1:{0}/live_flv/user/wasu?url={1}".format(port, self.url)
+            command = "nohup python {0}/play.py {1} > /dev/null 2>&1 &".format(REMOTE_PLAYER_PATH, url)
+            print command
+            ssh.exec_command(command)
+            time.sleep(0.1)
+        ssh.close()
+
+    def start_sdk(self):
+        # start sdk on remote machines and remove folder
+        print "Start SDK for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        ssh.exec_command("chmod +x {0}".format(REMOTE_SDK))
+        for i in range(self.sdk_nums):
+            port = i * SDK_PORT_STEP + SDK_PORT_START
+            print "Start SDK for port {0}".format(port)
+            ssh.exec_command("mkdir -p {0}/{1}".format(REMOTE_SDK_PATH, i))
+            ssh.exec_command("cp {0} {1}/{2}/{3}".format(REMOTE_SDK, REMOTE_SDK_PATH, i, SDK_FILE))
+            time.sleep(0.1)
+            p2pclient = "cd {0}/{1} && nohup ./{2}".format(REMOTE_SDK_PATH, i, SDK_FILE)
+            command = "{0} -p {1} > /dev/null 2>&1 &".format(p2pclient, port)
+            print "Command is: " + command
+            ssh.exec_command(command)
+        ssh.close()
+
+    def restart_sdk(self):
+        # restart sdk on remote machines
+        print "Start SDK for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        ssh.exec_command("chmod +x {0}".format(REMOTE_SDK))
+        for i in range(self.sdk_nums):
+            port = i * SDK_PORT_STEP + SDK_PORT_START
+            print "Restart SDK for port {0}".format(port)
+            p2pclient = "cd {0}/{1} && nohup ./{2}".format(REMOTE_SDK_PATH, i, SDK_FILE)
+            command = "{0} -p {1} > /dev/null 2>&1 &".format(p2pclient, port)
+            print "Command is: " + command
+            ssh.exec_command(command)
+        ssh.close()
+
+    def deploy_sdk(self):
+        # delete sdk on remote machines
+        print "Start Clean for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        ssh.exec_command("killall {0}".format(SDK_FILE))
+        time.sleep(2)
+        ssh.exec_command("rm -rf {0}/".format(REMOTE_SDK_PATH))
+        ssh.exec_command("rm -rf {0}".format(REMOTE_SDK_PATH))
+        time.sleep(0.1)
+        ssh.exec_command("mkdir -p {0}".format(REMOTE_SDK_PATH))
+        time.sleep(0.1)
+        ssh.close()
+        if SCP_COPY:
+            copy_via_scp(self.ip, self.username, self.local_sdk, REMOTE_SDK_PATH)
+        else:
+            copy_via_paramiko(self.ip, SSH_PORT, self.username, self.password, self.local_sdk, REMOTE_SDK_FILE_PATH)
+
+    def deploy_player(self):
+        # delete sdk on remote machines
+        print "Start deploy player for {0}".format(self.ip)
+        deployer = RemoteDeployer(self.ip, self.username, self.password)
+        print "local dir: ", parent_path
+        print "remote dir: ", REMOTE_PLAYER_PATH
+        deployer.deploy_folder(parent_path, REMOTE_PLAYER_PATH, "python")
+
+
+class RemoteDeployer(object):
+    def __init__(self, ip, username, password):
+        self.ip = ip
+        self.username = username
+        self.password = password
+        print [username, password]
+
+    def deploy_folder(self, local_dir, remote_dir, kill_proc=None):
+        # delete files on remote machines
+        print "Start Clean for {0}".format(self.ip)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip, SSH_PORT, self.username, self.password)
+        if kill_proc is not None:
+            ssh.exec_command("killall {0}".format(kill_proc))
+            print "kill process {0}".format(kill_proc)
+        command = "rm -rf {0}; mkdir -p {0}".format(remote_dir)
+        print "command is :", command
+        ssh.exec_command(command)
+        # ssh.exec_command("mkdir -p {0}".format(remote_dir))
+        time.sleep(1)
+        ssh.close()
+
+        if SCP_COPY:
+            print "SCP COPY"
+            copy_via_scp(self.ip, self.username, local_dir, remote_dir)
+        else:
+            print "Paramiko COPY"
+            print "local dir: ", local_dir
+            print "remote dir: ", remote_dir
+            copy_via_paramiko(self.ip, SSH_PORT, self.username, self.password, local_dir, remote_dir)
+
+
+def copy_via_paramiko(ip, port, username, password, local_path, remote_path):
+        t = paramiko.Transport(ip, port)
+        t.connect(username=username, password=password)
+        sftp = paramiko.SFTPClient.from_transport(t)
+        if remote_path == "/home/admin/player":
+            sftp.put(local_path+"/main.py", remote_path+"/main.py")
+            sftp.put(local_path+"/play.py", remote_path+"/play.py")
+            sftp.put(local_path+"/flv_parse.py", remote_path+"/flv_parse.py")
+        else:
+            sftp.put(local_path, remote_path)
+
+        t.close()
+
+
+def copy_via_scp(ip, username, local_path, remote_path):
+        command = 'scp -r {0} {1}@{2}:{3}'.format(local_path, username, ip, remote_path)
+        print "Start Deploy SDK for {0}".format(ip)
+        os.system(command)
+        print "End Deploy SDK for {0}".format(ip)
+
+
+def start_test():
+    for i in range(len(SDK_IP_LIST)):
+        print "--------------------------------------------------------------------------------------------------------"
+        player = RemotePlayer(SDK_IP_LIST[i], SDK_NUM_LIST[i], CHANNEL_URL_LIST[i], SDK_FILE_PATH, SDK_USER_NAME_LIST[i],
+                              SDK_PASSWORD_LIST[i])
+        player.stop_play()
+        player.stop_sdk()
+
+        player.deploy_sdk()     # delete sdk file to free HD space
+        player.deploy_player()
+
+        player.start_sdk()
+        player.start_play()
+
+
+def restart_test():
+    for i in range(len(SDK_IP_LIST)):
+        print "--------------------------------------------------------------------------------------------------------"
+        player = RemotePlayer(SDK_IP_LIST[i], SDK_NUM_LIST[i], CHANNEL_URL_LIST[i], SDK_FILE_PATH, SDK_USER_NAME_LIST[i],
+                              SDK_PASSWORD_LIST[i])
+        player.stop_play()
+        player.stop_sdk()
+        player.restart_sdk()
+        player.start_play()
+
+
+def stop_test():
+    for i in range(len(SDK_IP_LIST)):
+        print "--------------------------------------------------------------------------------------------------------"
+        player = RemotePlayer(SDK_IP_LIST[i], SDK_NUM_LIST[i], CHANNEL_URL_LIST[i], SDK_FILE_PATH,
+                              SDK_USER_NAME_LIST[i], SDK_PASSWORD_LIST[i])
+        player.stop_play()
+        player.stop_sdk()
+
+
+def print_help():
+    print "Please use control type: [start] or [stop] or [restart]"
+
+
+def read_ini():
+    config = ConfigParser.ConfigParser()
+    config.readfp(open(INI_FILE_PATH))
+    section_list = config.sections()
+    for i in section_list:
+        if config.has_section(i):
+            SDK_IP_LIST.append(config.get(i, "IP"))
+            SDK_USER_NAME_LIST.append(config.get(i, "Username"))
+            SDK_PASSWORD_LIST.append(config.get(i, "Password"))
+            SDK_NUM_LIST.append(int(config.get(i, "SDK_Number")))
+            CHANNEL_URL_LIST.append(config.get(i, "Channel_URL"))
+        else:
+            break
+
+    print SDK_IP_LIST
+    print SDK_USER_NAME_LIST
+    print SDK_PASSWORD_LIST
+    print SDK_NUM_LIST
+    print CHANNEL_URL_LIST
+
+###############################
+# Main Function
+###############################
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print_help()
+    else:
+        read_ini()
+        if sys.argv[1] == "start":
+            start_test()
+        elif sys.argv[1] == "restart":
+            restart_test()
+        elif sys.argv[1] == "stop":
+            stop_test()
+        else:
+            print_help()
+
+
+
+
+
+
+
+
+
+
+
+
+
+

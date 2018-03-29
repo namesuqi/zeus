@@ -1,0 +1,44 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/up/account_server.py
+
+*** Test Cases ***
+login_ok
+    [Documentation]    Target:验证使用有效用户名和正确密码能够登录
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+login_invalid_user
+    [Documentation]    Target:验证当username不存在时，返回E_INCORRECT_USERNAME_OR_PASSWORD
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_NOT_EXIST}    ${PASSWD_NOT_EXIST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INCORRECT_USERNAME_OR_PASSWORD
+
+login_incorrect_passwd
+    [Documentation]    Target:验证当password错误时，返回E_INCORRECT_USERNAME_OR_PASSWORD
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_NOT_EXIST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INCORRECT_USERNAME_OR_PASSWORD
+
+login_user_missing
+    [Documentation]    Target:验证用户参数缺失时，返回E_PARAM_MISSING
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+login_passwd_missing
+    [Documentation]    Target：验证密码为空时，返回E_PARAM_MISSING
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING

@@ -1,0 +1,470 @@
+*** Settings ***
+Documentation     Boss外部接口-客户API
+...
+...               云端专用 : 获取五分钟内的流量汇总信息
+...
+...               case-domains_invalid暂时关闭(bug未修复)
+Library           ../../../../lib/response/parse_response.py
+Library           ../../../../lib/response/verify_response.py
+Variables         ../../../../lib/constant/request.py
+Library           ../../../../lib/interface/boss/external_api.py
+Library           ../../../../lib/interface/boss/api_data.py
+Library           ../../../../lib/interface/boss/extra_function.py
+Variables         ../../../../lib/interface/boss/api_constant.py
+
+*** Test Cases ***
+domains_1_ok
+    [Documentation]    验证 : 请求参数domains为None时, 会返回200和所有domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${CUSTOMER_1_DOMAIN_LIST}    ${None}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}
+    Should Be Equal    ${data}    ${data_check}
+
+domains_2_ok
+    [Documentation]    验证 : 请求参数domains字段缺失时, 会返回200和所有domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${None}    ${4}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}
+    Should Be Equal    ${data}    ${data_check}
+
+domains_3_ok
+    [Documentation]    验证 : 请求参数domains为空列表时, 会返回200和所有domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${domains}    create list
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}
+    Should Be Equal    ${data}    ${data_check}
+
+domains_one_ok
+    [Documentation]    验证 : 请求参数domains为该客户的某一个域名时, 会返回200和指定domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    : FOR    ${domain}    IN    @{CUSTOMER_1_DOMAIN_LIST}
+    \    ${domains}    create list    ${domain}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST}    ${domains}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${domains}
+    \    Should Be Equal    ${data}    ${data_check}
+
+domains_many_ok
+    [Documentation]    验证 : 请求参数domains为该客户的多个域名时, 会返回200和指定domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${CUSTOMER_1_DOMAIN_LIST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${CUSTOMER_1_DOMAIN_LIST}
+    Should Be Equal    ${data}    ${data_check}
+
+domains_repeat_ok
+    [Documentation]    验证 : 请求参数domains包含重复的域名时, 会返回200和去重后指定domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${domains}    create list    ${CUSTOMER_1_DOMAIN_1}    ${CUSTOMER_1_DOMAIN_1}    ${CUSTOMER_1_DOMAIN_2}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${domains}
+    Should Be Equal    ${data}    ${data_check}
+
+domain_start_boundary_1_ok
+    [Documentation]    验证 : 请求指定domain的流量信息, 且start为边界值时, 会返回200和指定domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    : FOR    ${domain}    IN    @{CUSTOMER_1_DOMAIN_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST-1}    ${CUSTOMER_1_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${CUSTOMER_1_DOMAIN_LIST}
+    \    Should Be Equal    ${data}    ${data_check}
+
+domain_start_boundary_2_ok
+    [Documentation]    验证 : 请求指定domain的流量信息, 且start为边界值时, 会返回200和指定domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    : FOR    ${domain}    IN    @{CUSTOMER_1_DOMAIN_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST+1}    ${CUSTOMER_1_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_NOW}    ${CUSTOMER_1_DOMAIN_LIST}
+    \    Should Be Equal    ${data}    ${data_check}
+
+domains_start_boundary_1_ok
+    [Documentation]    验证 : 请求参数domain为None, 且start为边界值时, 会返回200和所有domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST-1}    ${None}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}
+    Should Be Equal    ${data}    ${data_check}
+
+domains_start_boundary_2_ok
+    [Documentation]    验证 : 请求参数domain为None, 且start为边界值时, 会返回200和所有domain的流量信息, 且返回信息正确
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST+1}    ${None}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Down Minute Traffic Data    ${CUSTOMER_ID_1}    ${START_MINUTE_NOW}
+    Should Be Equal    ${data}    ${data_check}
+
+access_key_empty
+    [Documentation]    验证 : 请求参数api_access_key为""时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_none
+    [Documentation]    验证 : 请求参数api_access_key为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${None}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_missing
+    [Documentation]    验证 : 请求参数api_access_key字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${None}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_invalid
+    [Documentation]    验证 : 请求参数api_access_key包含非法字符时, 能正常响应, 返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_type_number
+    [Documentation]    验证 : 请求参数api_access_key为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+timestamp_none
+    [Documentation]    验证 : 请求参数timestamp为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${None}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_missing
+    [Documentation]    验证 : 请求参数timestamp字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${None}    ${1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_invalid
+    [Documentation]    验证 : 请求参数timestamp不为非负整数时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${timestamp_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${timestamp_invalid}    ${sign}    ${START_MINUTE_PAST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_access_key_another_customer
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_access_key为其他客户的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_secret_key_another_customer
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key为其他客户的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_timestamp_not_match
+    [Documentation]    验证 : 请求参数sign在加密前使用的timestamp与请求参数timestamp不一致时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${NUMBER}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_key_another_customer
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key与加密前的api_access_key同为其他客户的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+internal_key
+    [Documentation]    验证 : 请求参数sign与参数api_access_key都为内部接口的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+sign_none
+    [Documentation]    验证 : 请求参数sign为None时, 会返回400
+    [Tags]    boss_external_api
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${None}    ${START_MINUTE_PAST}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_missing
+    [Documentation]    验证 : 请求参数sign字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${None}    ${2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_length_not_match
+    [Documentation]    验证 : 请求参数sign不为三十二位时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_LENGTH_INCORRECT_LIST}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${START_MINUTE_PAST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_invalid
+    [Documentation]    验证 : 请求参数sign为三十二位字符串, 但包含非法字符时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_INVALID_LIST}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${START_MINUTE_PAST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_type_number
+    [Documentation]    验证 : 请求参数sign为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${START_MINUTE_PAST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+start_invalid
+    [Documentation]    验证 : 请求参数start不为非负整数时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${start_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${start_invalid}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+start_missing
+    [Documentation]    验证 : 请求参数start字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${None}    ${3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+start_future
+    [Documentation]    验证 : 请求参数start为未来时间时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_FUTURE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+
+domains_invalid
+    [Documentation]    验证 : 请求参数domains不为列表类型时, 会返回400
+    [Tags]    boss_external_ap
+    : FOR    ${domains_invalid}    IN    @{DOMAINS_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST}    ${domains_invalid}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+domain_type_number
+    [Documentation]    验证 : 请求参数domains包含数字类型的domain时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${domain_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${domains_invalid}    create list    ${CUSTOMER_1_DOMAIN_1}    ${domain_invalid}    ${CUSTOMER_1_DOMAIN_2}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST}    ${domains_invalid}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+domain_none
+    [Documentation]    验证 : 请求参数domains包含为None的domain时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${domains_invalid}    create list    ${CUSTOMER_1_DOMAIN_1}    ${None}    ${CUSTOMER_1_DOMAIN_2}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${domains_invalid}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+domain_not_exist
+    [Documentation]    验证 : 请求参数domains包含数据库中不存在的domain时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${domains_invalid}    create list    ${CUSTOMER_1_DOMAIN_1}    ${DOMAIN_NOT_EXIST}    ${CUSTOMER_1_DOMAIN_2}
+    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${START_MINUTE_PAST}    ${domains_invalid}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}
+
+domain_another_customer
+    [Documentation]    验证 : 请求参数domains包含其他客户的domain时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_external_api
+    : FOR    ${domain_customer_2}    IN    @{CUSTOMER_2_DOMAIN_LIST}
+    \    ${domains_invalid}    create list    ${CUSTOMER_1_DOMAIN_1}    ${domain_customer_2}    ${CUSTOMER_1_DOMAIN_2}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    \    ${response}    Down Minute Traffic    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${START_MINUTE_PAST}    ${domains_invalid}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_DOMAIN_NOT_EXIST}

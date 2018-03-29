@@ -1,0 +1,92 @@
+*** Settings ***
+Force Tags
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Variables         ../../../lib/constant/database.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/p2p_ops.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/etcd_handler.py
+
+*** Test Cases ***
+delete_group_ok
+    [Documentation]    验证可以删除指定域名组
+    [Tags]    ops
+    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}    ${HOSTNAME}
+    ${response}    Delete Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${value_list}    ${None}
+
+delete_group_ok_too_long
+    [Documentation]    验证可以删除指定域名组（针对长度过长的域名组）
+    [Tags]    ops
+    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME_LONG}    ${HOSTNAME}
+    ${response}    Delete Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME_LONG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${GROUPNAME_LONG}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${value_list}    ${None}
+
+delete_group_empty
+    [Documentation]    验证必选参数groupname缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    ${response}    Delete Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+delete_group_not_exist
+    [Documentation]    验证必选参数groupname对应信息不存在时，ops可返回200和E_KEY_NOT_FOUND
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    ${response}    Delete Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${INVALID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_KEY_NOT_FOUND
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+delete_host_ok
+    [Documentation]    验证可以成功删除指定域名
+    [Tags]    ops
+    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}    ${DIVISION_DD}
+    ${response}    Delete Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${value_list}    ${None}
+
+delete_host_ok_too_long
+    [Documentation]    验证可以成功删除指定域名（针对长度过长的域名）
+    [Tags]    ops
+    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME_LONG}    ${TTL}    ${DIVISION_DD}
+    ${response}    Delete Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME_LONG}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${HOSTNAME_LONG}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${value_list}    ${None}
+
+delete_host_empty
+    [Documentation]    验证必选参数host缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Delete Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+delete_host_not_exist
+    [Documentation]    验证必选参数host对应的信息不存在时，ops可返回200和E_KEY_NOT_FOUND
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Delete Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${INVALID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_KEY_NOT_FOUND
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}

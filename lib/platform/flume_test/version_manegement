@@ -1,0 +1,31 @@
+    topic                           shoffice                      auto-test
+
+add_file                                v3
+add_tenant                              v3
+add_tenant_domain                       v3
+bd_flow                                 v2
+b_download_flow                         v2
+cache_report                            v4
+channel_strategy_switch                 v1
+delete_file                             v3
+download_flow                           v3
+file_seed_change                        v3
+fod_report                              v3
+heartbeat                               v4
+live_create_channel                     v3
+live_delete_channel                     v3
+live_progress                           v3
+peer_info                               v4
+push_disk_cache                         v3
+push_prefetch_task                      v3
+push_srv_task                           v1
+qos_buffering_count                     v2
+qos_startup                             v3
+sdk_directional_task_live               v1
+sdk_directional_task_vod                v2
+sdk_lsm                                 v3
+sdk_random_task_vod                     v1
+seed_flow                               v4
+seed_info                               v4
+upload_flow                             v3
+user_strategy_switch                    v1

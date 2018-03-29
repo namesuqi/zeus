@@ -1,0 +1,40 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/account_server.py
+
+*** Test Cases ***
+logout_ok
+    [Documentation]    Target：验证能够注销指定用户
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Logout    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${session_cookie}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+logout_invalid_session_id
+    [Documentation]    Target：验证当session不存在（可能是已经过期）时，返回E_INVALID_SESSIONID
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Logout    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${INVALID_SESSION_COOKIE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INCORRECT_SESSIONID
+
+no_session_id
+    [Documentation]    Target：验证当session参数缺失时，返回E_INVALID_SESSIONID
+    [Tags]    account    regression
+    ${response}    Account Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    ${session_cookie}    Get Cookies Value    ${response}
+    log    ${session_cookie}
+    ${response}    Account Logout    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INCORRECT_SESSIONID

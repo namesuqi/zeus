@@ -1,0 +1,50 @@
+*** Settings ***
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/business/Dir.py
+Library           ../../../lib/database/MysqlHandler.py
+Library           ../../../lib/database/mysqldb.py
+Library           ../../../lib/business/sdk_dash_board.py
+Library           Collections
+Library           HttpLibrary.HTTP
+Library           ../../../lib/database/redisdb.py
+Library           ../../../lib/database/RedisHandler.py
+Variables         ../../../lib/constant/sdk.py
+Library           Remote    http://${SDK1_IP}:${REMOTE_AGENT_PORT}    WITH NAME    Sdk1Remote
+Library           ../../../lib/database/RedisCluster.py
+
+*** Test Cases ***
+RedisDownloadTask
+    [Documentation]    Target Validate Sdk Can Execute the Download Data Task
+    [Tags]
+    Sdk1Remote.RestartSDK
+    Sleep    15
+    ${login}    Getlogin
+    ${status}    Get Json Value    ${login}    /status
+    Log Many    "Login Status is: "    ${status}
+    Should Be Equal    ${status}    "E_OK"
+    ${peer_id}    Sdk1Remote.GetPeerID
+    Log    ${peer_id}
+    ${lsm}    GetLsm
+    ${files}    Get Json Value    ${lsm}    /bet/files
+    Should Be Equal    ${files}    []
+    ${response}    DirGetPlayInfo    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ciwen    source_url
+    ...    ${CIWEN_M3U8_URL}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    @{file_info}    DbGetInfoBySourceUrl    ${CIWEN_M3U8_URL}
+    ${file_id}    GetFieldValue    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${file_size}    GetFieldValue    ${response}    size
+    Log    ${file_id}
+    Log    ${file_size}
+    SADD    ${peer_id}    ${file_id}    ${file_size}    download
+    ZADD_PUSHING_FILES     ${file_id}    download
+    Sleep    350
+    ${lsm}    GetLsm
+    ${match}    MatchFileId    ${file_id}    ${lsm}
+    Should Not Be Equal    ${match}    -1

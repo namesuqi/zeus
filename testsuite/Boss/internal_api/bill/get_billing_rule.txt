@@ -1,0 +1,463 @@
+*** Settings ***
+Documentation     Boss对内接口-服务API
+...
+...               获取计费规则信息
+Library           ../../../../lib/response/parse_response.py
+Library           ../../../../lib/response/verify_response.py
+Variables         ../../../../lib/constant/request.py
+Library           ../../../../lib/interface/boss/internal_api.py
+Library           ../../../../lib/interface/boss/api_data.py
+Library           ../../../../lib/interface/boss/extra_function.py
+Variables         ../../../../lib/interface/boss/api_constant.py
+
+*** Test Cases ***
+prefix_upload_ok
+    [Documentation]    验证 : 请求上传计费的block时, 会返回200及对应的计费规则信息, 且计费规则信息正确
+    [Tags]    boss_internal_api
+    : FOR    ${prefix}    IN    @{UPLOAD_PREFIX_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Billing Rule Data    ${prefix}    ${CATEGORY_UPLOAD}
+    \    Should Be Equal    ${data}    ${data_check}
+
+prefix_download_ok
+    [Documentation]    验证 : 请求下载计费的prefix时, 会返回200及对应的计费规则信息, 且计费规则信息正确
+    [Tags]    boss_internal_api
+    : FOR    ${prefix}    IN    @{DOWNLOAD_PREFIX_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix}    ${CATEGORY_DOWNLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Billing Rule Data    ${prefix}    ${CATEGORY_DOWNLOAD}
+    \    Should Be Equal    ${data}    ${data_check}
+
+category_upload_no_rule_ok
+    [Documentation]    验证 : 请求计费类别为上传, 但没有计费规则的block时, 会返回200及计费规则信息, 但计费规则信息为空
+    [Tags]    boss_internal_api
+    : FOR    ${prefix}    IN    @{NOT_UPLOAD_PREFIX_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    {}
+
+category_download_no_rule_ok
+    [Documentation]    验证 : 请求计费类别为下载, 但没有计费规则的block时, 会返回200及计费规则信息, 但计费规则信息为空
+    [Tags]    boss_internal_api
+    : FOR    ${prefix}    IN    @{NOT_DOWNLOAD_PREFIX_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix}    ${CATEGORY_DOWNLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    {}
+
+access_key_external
+    [Documentation]    验证 : 请求参数api_access_key为外部接口的key值时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_empty
+    [Documentation]    验证 : 请求参数api_access_key为""时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_none
+    [Documentation]    验证 : 请求参数api_access_key为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${None}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_missing
+    [Documentation]    验证 : 请求参数api_access_key字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_invalid
+    [Documentation]    验证 : 请求参数api_access_key不存在, 或包含非法字符时, 能正常响应, 返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_type_number
+    [Documentation]    验证 : 请求参数api_access_key为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+timestamp_none
+    [Documentation]    验证 : 请求参数timestamp为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${None}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_missing
+    [Documentation]    验证 : 请求参数timestamp字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}    ${1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_invalid
+    [Documentation]    验证 : 请求参数timestamp不为非负整数时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${timestamp_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${timestamp_invalid}    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_access_key_external
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_access_key为外部接口的key值时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_secret_key_external
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key为外部接口的key值时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_timestamp_not_match
+    [Documentation]    验证 : 请求参数sign在加密前使用的timestamp与请求参数timestamp不一致时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${NUMBER}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_key_external
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key与加密前的api_access_key同为外部接口的key值, 但参数api_access_key为内部接口的key值时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_none
+    [Documentation]    验证 : 请求参数sign为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${None}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_missing
+    [Documentation]    验证 : 请求参数sign字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}    ${2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_length_not_match
+    [Documentation]    验证 : 请求参数sign不为三十二位时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_LENGTH_INCORRECT_LIST}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_invalid
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_access_key和api_secret_key都为外部接口的key值时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_internal_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_INVALID_LIST}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_type_number
+    [Documentation]    验证 : 请求参数sign为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${sign_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${PREFIX_01}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+prefix_not_exist
+    [Documentation]    验证 : 请求参数prefix在CRM中不存在时, 返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_NOT_EXIST}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PREFIX_NOT_EXIST}
+
+prefix_empty
+    [Documentation]    验证 : 请求参数prefix为""时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${EMPTY}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PREFIX_NOT_EXIST}
+
+prefix_none
+    [Documentation]    验证 : 请求参数prefix为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${None}    ${CATEGORY_UPLOAD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+prefix_missing
+    [Documentation]    验证 : 请求参数prefix字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}    ${3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+prefix_invalid_1
+    [Documentation]    验证 : 请求参数prefix不为八位十六进制时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    : FOR    ${prefix_invalid}    IN    @{PREFIX_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix_invalid}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PREFIX_NOT_EXIST}
+
+prefix_invalid_2
+    [Documentation]    验证 : 请求参数prefix包含非法字符时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    : FOR    ${prefix_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix_invalid}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PREFIX_NOT_EXIST}
+
+prefix_type_number
+    [Documentation]    验证 : 请求参数prefix为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${prefix_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix_invalid}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+category_empty
+    [Documentation]    验证 : 请求参数category为""时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_BLOCK_NOT_EXIST}
+
+category_none
+    [Documentation]    验证 : 请求参数category为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${None}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+category_missing
+    [Documentation]    验证 : 请求参数category字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${PREFIX_01}    ${CATEGORY_UPLOAD}    ${4}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+category_invalid
+    [Documentation]    验证 : 请求参数category不为"upload"或"download"时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    : FOR    ${category_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${PREFIX_01}    ${category_invalid}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_BLOCK_NOT_EXIST}
+
+category_type_number
+    [Documentation]    验证 : 请求参数category为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${category_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${PREFIX_01}    ${category_invalid}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+category_upload_no_block
+    [Documentation]    验证 : 请求计费类别为上传, 但没有分块信息的block时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    : FOR    ${prefix_upload_no_block}    IN    @{UPLOAD_NO_BLOCK_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix_upload_no_block}    ${CATEGORY_UPLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_BLOCK_NOT_EXIST}
+
+category_download_no_block
+    [Documentation]    验证 : 请求计费类别为下载, 但没有分块信息的block时, 会返回200及错误信息, 且不会返回计费规则信息
+    [Tags]    boss_internal_api
+    : FOR    ${prefix_download_no_block}    IN    @{DOWNLOAD_NO_BLOCK_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Billing Rule    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${prefix_download_no_block}    ${CATEGORY_DOWNLOAD}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_BLOCK_NOT_EXIST}

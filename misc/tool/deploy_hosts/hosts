@@ -1,0 +1,26 @@
+127.0.0.1 localhost
+127.0.1.1	localhost.localdomain	localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+10.5.100.18 vod.cloutropy.com
+
+180.97.74.218 cdn.entropycode.com
+180.97.74.218 live.entropycode.com
+
+#125.39.168.147 push.entropycode.com
+111.20.248.13 push.entropycode.com
+
+10.6.100.6 ts.entropycode.com
+10.6.103.2 stats.entropycode.com
+10.6.100.3 stun.entropycode.com
+
+10.6.100.3 channel.entropycode.com
+10.6.100.6 seeds.entropycode.com
+10.6.100.6 report.entropycode.com
+
+
+

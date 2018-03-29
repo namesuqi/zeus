@@ -1,0 +1,95 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+
+*** Test Cases ***
+ts_get_push_task_idle
+    [Documentation]    目标：验证peer请求推送 状态为idle 新版本 未使用
+    ...    设计：新加STATUS传参
+    [Tags]    regression    ts_old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${STATUS_1}
+    ...    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_busy
+    [Documentation]    目标：验证peer请求推送 状态为busy 新版本 未使用
+    [Tags]    regression    ts_old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${STATUS_2}
+    ...    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_invalid_peer_id
+    [Documentation]    目标：验证非法peer_id请求推送
+    [Tags]    regression    ts_old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_INVALID}    ${STATUS_1}
+    ...    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_no_lsm_free
+    [Documentation]    目标：验证缺失LsmFree请求推送返回成功
+    [Tags]    regression    ts_old
+    [Setup]    Ts Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${STATUS_1}
+    ...    ${EMPTY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_no_status
+    [Documentation]    目标：验证无状态peer请求推送
+    [Tags]    regression    ts_old
+    [Setup]    Ts Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${EMPTY}
+    ...    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_no_peer_id
+    [Documentation]    目标：验证无peer_id请求推送
+    [Tags]    regression    ts_old
+    [Setup]    Ts Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${EMPTY}    ${STATUS_1}
+    ...    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_old_request_push_task
+    [Documentation]    目标：验证老版本的请求推送
+    [Tags]    ts_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_old_invalid_peer_id
+    [Documentation]    目标：验证老版本的请求推送传入非法peer_id 请求失败
+    [Tags]    ts_old    regression
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_INVALID}    ${LSMFREE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_push_task_old_no_lsm_free
+    [Documentation]    目标：验证缺失LsmFree项请求仍可成功返回
+    [Tags]    ts_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Request Push Task    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

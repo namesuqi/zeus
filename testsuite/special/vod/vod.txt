@@ -1,0 +1,33 @@
+*** Settings ***
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/vod.py
+Library           ../../../lib/business/Live.py
+
+*** Test Cases ***
+StartVod
+    [Documentation]
+    [Tags]    start_vod
+    InitSdkNumForVodPeer    5
+    StopVodForPeer
+    StopSdkForVodPeer
+    StartSdkForVodPeer
+    StartVodForPeer    ${VOD_CHANNEL_1}
+
+StopVod
+    [Documentation]
+    [Tags]    stop_vod
+    InitSdkNumForVodPeer    5
+    StopVodForPeer
+    StopSdkForVodPeer
+
+RestartVod
+    [Documentation]
+    [Tags]    restart_vod
+    InitSdkNumForVodPeer    5
+    StopVodForPeer
+    StopSdkForVodPeer
+    StartSdkForVodPeer
+    StartVodForPeer    ${VOD_CHANNEL_1}
+
+
+

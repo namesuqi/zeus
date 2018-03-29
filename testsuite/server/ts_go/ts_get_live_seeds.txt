@@ -1,0 +1,93 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/redis_cluster.py
+
+*** Test Cases ***
+ts_get_live_seeds_ok
+    [Documentation]    目标：验证已登录peer能够正确获取直播seed列表
+    [Tags]    ts_go    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}
+    ...    ${60}    ${LIVE_FILE_ID}    ${CPPC}    ${60}    ${60}    ${OP_ADD}
+    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    ${PEER_ID2}    ${LIVE_FILE_ID}
+    ...    ${CHUNK_ID_NORMAL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${seed_id}    Get Response Data By Path    ${response}    seeds/0/peer_id
+    Should Be Equal    ${seed_id}    ${PEER_ID1}
+
+ts_get_live_seeds_chunk_id_zero
+    [Documentation]    目标：验证peer使用值为0的CHUNK_ID能够正确获取seed列表
+    [Tags]    ts_go    regression
+    [Setup]    Run Keywords    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ...    ${VERSION}    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ...    ${STUN_IP1}
+    ...    AND    Control Report V1    ${HTTP}    ${REPORT_HOST}    ${REPORT_PORT}    ${PEER_ID1}
+    ...    ${60}    ${LIVE_FILE_ID}    ${CPPC}    ${60}    ${60}    ${OP_ADD}
+    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    ${PEER_ID2}    ${LIVE_FILE_ID}
+    ...    ${CHUNK_ID_ZERO}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${seed_id}    Get Response Data By Path    ${response}    seeds/0/peer_id
+    Should Be Equal    ${seed_id}    ${PEER_ID1}
+
+ts_get_live_seeds_no_chunk_id
+    [Documentation]    目标：验证缺失可选参数CHUNK_ID时，服务器可正常返回
+    ...    设计：CHUNK_ID是可选参数，可以缺失
+    [Tags]    ts_go    regression
+    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    ${PEER_ID2}    ${LIVE_FILE_ID}
+    ...    ${EMPTY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_live_seeds_file_id_invalid
+    [Documentation]    目标：验证传入非法file_id请求失败
+    ...    设计： 输入file_id不是32位字符串即非法
+    [Tags]    ts_go    regression
+    : FOR    ${file_id_invalid}    IN    @{UUID_INVALID_LIST}
+    \    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    ${PEER_ID1}
+    \    ...    ${file_id_invalid}    ${CHUNK_ID_NORMAL}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+ts_get_live_seeds_peer_id_invalid
+    [Documentation]    目标：验证传入非法peer_id请求失败
+    ...    设计： 输入peer_id不是32位字符串即非法
+    [Tags]    ts_go    regression
+    : FOR    ${peer_id_invalid}    IN    @{UUID_INVALID_LIST}
+    \    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    ${peer_id_invalid}
+    \    ...    ${LIVE_FILE_ID}    ${CHUNK_ID_NORMAL}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+ts_get_live_seeds_peer_id_missing
+    [Documentation]    目标：验证参数peer_id缺失时，服务器能返回400
+    [Tags]    ts_go    regression
+    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    \    ${LIVE_FILE_ID}
+    ...    ${CHUNK_ID_NORMAL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_live_seeds_peer_not_login
+    [Documentation]    目标：验证peer未login的情况下，将不能正确获取seed列表，服务器返回E_TS_NOT_LOGIN
+    [Tags]    ts_go    regression
+    Peer Logout    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}
+    ${response}    Peer Get Live Seeds    ${HTTP}    ${SEEDS_HOST}    ${SEEDS_PORT}    ${PEER_ID1}    ${LIVE_FILE_ID}
+    ...    ${CHUNK_ID_NORMAL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_TS_NOT_LOGIN

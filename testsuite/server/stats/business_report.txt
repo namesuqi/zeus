@@ -1,0 +1,70 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/interface/cp/stats_server.py
+Variables         ../../../lib/interface/cp/stats_constant.py
+
+*** Test Cases ***
+business_report_ok
+    [Documentation]    目标：验证已登录peer能成功进行商务汇报,下载和上传流量都有
+    [Tags]    regression    stats old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Peer Business Report    ${HTTP}    ${MSG_ID}    ${STATS_HOST}    ${STATS_PORT}    ${PEER_ID}
+    ...    ${DOWNLOAD_URL}    ${VVID}    ${TYPE_VOD}    ${DOWNLOAD_TIMESTAMP}    ${DOWNLOAD_DURATION}    ${DOWNLOAD_BYTES}
+    ...    ${UPLOAD_TIMESTAMP}    ${UPLOAD_DURATION}    ${UPLOAD_BYTES}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+business_report_upload_ok
+    [Documentation]    目标：验证已登录peer能成功进行商务汇报, 只有上传流量
+    [Tags]    regression    stats old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Peer Business Report Upload    ${HTTP}    ${MSG_ID}    ${STATS_HOST}    ${STATS_PORT}    ${PEER_ID1}
+    ...    ${UPLOAD_TIMESTAMP}    ${UPLOAD_DURATION}    ${UPLOAD_BYTES}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+business_report_download_ok
+    [Documentation]    目标：验证已登录peer能成功进行商务汇报,只有下载流量
+    [Tags]    regression    stats old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Peer Business Report    ${HTTP}    ${MSG_ID}    ${STATS_HOST}    ${STATS_PORT}    ${PEER_ID1}
+    ...    ${DOWNLOAD_URL}    ${VVID}    ${TYPE_VOD}    ${DOWNLOAD_TIMESTAMP}    ${DOWNLOAD_DURATION}    ${DOWNLOAD_BYTES}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+not_login_business_report
+    [Documentation]    目标：验证已登出peer不能成功进行商务汇报
+    [Tags]    regression    stats old
+    [Setup]    Peer Logout    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID3}
+    ${response}    Peer Business Report    ${HTTP}    ${MSG_ID}    ${STATS_HOST}    ${STATS_PORT}    ${PEER_ID3}
+    ...    ${DOWNLOAD_URL}    ${VVID}    ${TYPE_VOD}    ${DOWNLOAD_TIMESTAMP}    ${DOWNLOAD_DURATION}    ${DOWNLOAD_BYTES}
+    ...    ${UPLOAD_TIMESTAMP}    ${UPLOAD_DURATION}    ${UPLOAD_BYTES}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    ES_NOT_LOGIN
+
+no_peer_id_business_report
+    [Documentation]    目标：验证peer_id缺失不能成功进行商务汇报
+    [Tags]    regression    stats old
+    ${response}    Peer Business Report    ${HTTP}    ${MSG_ID}    ${STATS_HOST}    ${STATS_PORT}    ${EMPTY}
+    ...    ${DOWNLOAD_URL}    ${VVID}    ${TYPE_VOD}    ${DOWNLOAD_TIMESTAMP}    ${DOWNLOAD_DURATION}    ${DOWNLOAD_BYTES}
+    ...    ${UPLOAD_TIMESTAMP}    ${UPLOAD_DURATION}    ${UPLOAD_BYTES}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+no_msg_id_business_report
+    [Documentation]    目标：验证已登录peer能成功进行商务汇报,下载和上传流量都有
+    [Tags]    regression    stats old
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}
+    ${response}    Peer Business Report    ${HTTP}    \    ${STATS_HOST}    ${STATS_PORT}    ${PEER_ID1}
+    ...    ${DOWNLOAD_URL}    ${VVID}    ${TYPE_VOD}    ${DOWNLOAD_TIMESTAMP}    ${DOWNLOAD_DURATION}    ${DOWNLOAD_BYTES}
+    ...    ${UPLOAD_TIMESTAMP}    ${UPLOAD_DURATION}    ${UPLOAD_BYTES}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None

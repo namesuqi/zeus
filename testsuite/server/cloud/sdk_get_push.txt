@@ -1,0 +1,110 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/cloud_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/business/Cloud.py
+Library           ../../../lib/database/RedisHandler.py
+
+*** Test Cases ***
+push_ok
+    [Documentation]    目标：验证vod-push本地有该文件数据时能成功推送数据
+    ...
+    ...    说明：file_id, chunk_start_num, chuk_num, piece_num为必选参数，返400/404有待确认
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+fileid_not_exist
+    [Documentation]    目标：验证vod-push本地无此文件时，返回404
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_NOT_EXIST}    ${CHUNK_START}
+    ...    ${CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+invalid_fileid
+    [Documentation]    目标：验证使用无效的fileid（非十六进制字符串）进行login时，返回400
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${INVALID_FILE_ID}    ${CHUNK_START}
+    ...    ${CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+large_chunk_start
+    [Documentation]    目标：验证chunk_start超过文件本身chunk大小时，返回404
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${LARGE_CHUNK_START}
+    ...    ${CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+invalid_chunk_start
+    [Documentation]    目标：验证chunk_start无效时（非数字），返回400
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${INVALID_CHUNK_START}
+    ...    ${CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+zero_chunk_num
+    [Documentation]    目标：验证请求的chunk_num为0时，不推送数据
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${ZERO_CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+large_chunk_num
+    [Documentation]    目标：验证请求的chunk_num超出文件本身chunk数时，返404
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${LARGE_CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+invalid_chunk_num
+    [Documentation]    目标：验证请求的chunk_num无效时（非数字），返回400
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${INVALID_CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+zero_piece_num
+    [Documentation]    目标：验证当piece_num为0时，返回
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${CHUNK_NUM}    ${ZERO_PIECE_NUM}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+invalid_piece_num
+    [Documentation]    目标：验证当piece_num无效时（非数字），返回400
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${CHUNK_NUM}    ${INVALID_PIECE_NUM}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+other_piece_num
+    [Documentation]    目标：验证当piece_num为20时，vod-push可返回数据
+    [Tags]    cloud
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_ID}    ${CHUNK_START}
+    ...    ${CHUNK_NUM}    ${OTHER_PIECE_NUM}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+file_prefetching
+    [Documentation]    目标：验证当sdk请求的文件数据将要被vod-push下载但目前没有时时，返回503（需要在redis中添加预取task，该用例有待改进）
+    [Tags]    cloud
+    [Setup]    AddPrefetchFile    ${FILE_PREFETCHING}    ${FILE_OPE_DOWNLOAD}
+    sleep    20
+    ${response}    CloudPush    ${HTTP}    ${PUSH_HOST}    ${PUSH_PORT}    ${FILE_PREFETCHING }    600
+    ...    ${CHUNK_NUM}    ${PIECE_NUM}
+    Status Code Should Be Equal    ${response}    503
+    Error Code Should Be Equal    ${response}    None
+    [Teardown]    AddPrefetchFile    ${FILE_PREFETCHING}    ${FILE_OPE_DELETE}

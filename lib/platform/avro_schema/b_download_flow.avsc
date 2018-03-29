@@ -1,0 +1,19 @@
+{
+    "type":"record",
+    "name":"b_download_flow",
+    "fields":[
+        {"name":"id","type":"string"},
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"url","type":"string"},
+        {"name":"play_type","type":"string"},
+        {"name":"vvid","type":"string"},
+        {"name":"duration","type":"long"},
+        {"name":"app","type":"long"},
+        {"name":"cdn","type":"long"},
+        {"name":"p2p","type":"long"},
+        {"name":"public_ip","type":"string"},
+        {"name":"sdk_agent_name","type":"string"},
+        {"name":"sdk_agent_version","type":"string"}
+    ]
+}

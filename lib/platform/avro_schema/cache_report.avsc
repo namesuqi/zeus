@@ -1,0 +1,15 @@
+{
+    "type":"record",
+    "name":"cache_report",
+    "fields":[
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"file_id","type":"string"},
+        {"name":"cppc","type":"int"},
+        {"name":"operation","type":"string"},
+        {"name":"country","type":["null","string"],"default":null},
+        {"name":"province_id","type":["null","string"],"default":null},
+        {"name":"city_id","type":["null","string"],"default":null},
+        {"name":"isp_id","type":["null","string"],"default":null}
+    ]
+}

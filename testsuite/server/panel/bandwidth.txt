@@ -1,0 +1,113 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           lib.interface.up.panel_server
+Library           lib.database.mysql_handler
+
+*** Test Cases ***
+bandwidth_ok
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+bandwidth_not_login
+    [Tags]    panel1
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    live
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_LOGIN
+
+bandwidth_none_peer_prefix
+    [Tags]    panel1
+    [Setup]    create account
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NONE_PEER_PREFIX
+    [Teardown]    delete account
+
+bandwidth_miss_start
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${EMPTY}    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+bandwidth_miss_end
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    ${EMPTY}
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+bandwidth_miss_step
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    ${EMPTY}    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+bandwidth_miss_type
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    ${EMPTY}    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+bandwidth_invalid_start
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    INVALID_TIMESTAMP    1475054120000
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+bandwidth_invalid_end
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    INVALID_TIMESTAMP
+    ...    minute    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+bandwidth_invalid_step
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    INVALID_STEP    live    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+bandwidth_invalid_type
+    [Tags]    panel1
+    [Setup]    Save Login Cookie
+    ${response}    Panel Bandwidth    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    minute    INVALID_TYPE    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FAILED_TO_FETCH_DATA
+
+*** Keywords ***
+Save Login Cookie
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    Save Cookies    ${res}    panel_login_cookie
+
+create account
+    ${username}    Evaluate    str('tester')
+    db_add_user_no_prefix    ${username}    123456
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    tester    123456
+    Save Cookies    ${res}    panel_login_cookie
+
+delete account
+    db_delete_user_no_prefix    tester

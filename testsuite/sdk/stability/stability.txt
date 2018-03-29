@@ -1,0 +1,34 @@
+*** Settings ***
+Library           ../../../lib/business/SdkDashBoard.py
+Library           ../../../lib/utility/Verify.py
+Library           Collections
+Library           HttpLibrary.HTTP
+Variables         ../../../lib/constant/sdk.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/constant/account.py
+Library           Remote    http://${SDK1_IP}:${REMOTE_AGENT_PORT}    WITH NAME    Sdk1Remote
+
+*** Test Cases ***
+VodPlayChannel1
+    [Documentation]    Target：validate vod play p2p
+    [Tags]    stability
+    Sdk1Remote.RestartSDK
+    Sleep    3
+    Sdk1Remote.StartVod    ${BYTE_DISTRICT}    ${ICNTV_CDN_URL}    ${USER_CNTV}
+    Sleep    300
+    ${report}    GetReport
+    ${p2p}    Get Json Value    ${report}    /p2p_percent
+    VerifyLarger    ${p2p}    80
+    Sdk1Remote.StopVod
+
+VodPlayChannel2
+    [Documentation]    Target: validate vod play
+    [Tags]    stability
+    Sdk1Remote.RestartSDK
+    Sleep    3
+    Sdk1Remote.StartVod    ${BYTE_DISTRICT}    ${THUNDER_VOD_URL}    ${USER_CNTV}
+    Sleep    300
+    ${p2p}    GetP2P
+    VerifyLarger    ${p2p}    80
+    Sdk1Remote.StopVod
+

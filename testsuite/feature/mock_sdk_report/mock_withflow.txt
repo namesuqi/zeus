@@ -1,0 +1,103 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/feature/mock_sdk_report/send_sdk_requests.py
+Variables         ../../../lib/feature/mock_sdk_report/file_data.py
+
+*** Test Cases ***
+mock8_1
+    [Documentation]    expection:12,pass
+    [Tags]    mock_test    mock_8
+    seeds_login    0    210
+    peers_login    0    60
+    seeds_distribute    0    210    no    ${VOD_FILE1_ID}
+    peers_fod    0    60    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+    peers_flow    0    60    0.3    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+
+mock8_2
+    [Tags]    mock_test    mock_8
+    seeds_login    0    300
+    peers_login    60    120
+    seeds_distribute    0    300    no    ${VOD_FILE4_ID}
+    peers_fod    60    120    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+    peers_flow    60    120    0.3    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+
+mock8_3
+    [Tags]    mock_test    mock_8
+    seeds_login    0    400
+    peers_login    120    180
+    seeds_distribute    0    400    no    ${VOD_FILE3_ID}
+    peers_fod    120    180    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+    peers_flow    120    180    0.3    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+
+mock9
+    [Tags]    mock_test    mock_9
+    seeds_login    0    190
+    peers_login    0    30
+    seeds_distribute    0    80    no    ${VOD_FILE1_ID}
+    peers_fod    0    30    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+    peers_flow    0    30    0.6    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+    sleep    60
+    seeds_distribute    80    150    no    ${VOD_FILE1_ID}
+    sleep    60
+    seeds_distribute    150    190    no    ${VOD_FILE1_ID}
+
+mock10_1
+    [Tags]    mock_test    mock_10
+    seeds_login    0    420
+    peers_login    40    100
+    seeds_distribute    0    210    no    ${VOD_FILE2_ID}
+    peers_fod    40    100    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+    peers_flow    40    100    0.6    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+
+mock10_2
+    [Tags]    mock_test    mock_10
+    seeds_login    0    1
+    peers_login    100    160
+    seeds_distribute    0    300    no    ${VOD_FILE3_ID}
+    peers_fod    100    160    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+    peers_flow    100    160    0.6    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+
+mock10_3
+    [Tags]    mock_test    mock_10
+    seeds_login    0    1
+    peers_login    160    220
+    seeds_distribute    0    420    no    ${VOD_FILE4ID}
+    peers_fod    160    220    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+    peers_flow    160    220    0.6    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+
+mock11_1
+    [Tags]    mock_test    mock_11
+    seeds_login    0    420
+    peers_login    0    60
+    seeds_distribute    0    210    no    ${VOD_FILE2_ID}
+    peers_fod    0    60    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+    peers_flow    0    60    0.95    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+
+mock11_2
+    [Tags]    mock_test    mock_11
+    seeds_login    0    1
+    peers_login    60    120
+    seeds_distribute    0    300    no    ${VOD_FILE3_ID}
+    peers_fod    60    120    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+    peers_flow    60    120    0.95    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+
+mock11_3
+    [Tags]    mock_test    mock_11
+    seeds_login    0    420
+    peers_login    120    180
+    seeds_distribute    0    420    no    ${VOD_FILE4_ID}
+    peers_fod    120    180    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+    peers_flow    120    180    0.95    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+
+mock12
+    [Tags]    mock_test    mock_12
+    peers_login    0    150
+    peers_fod    0    20    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+    peers_fod    20    55    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+    peers_fod    55    95    ${VOD_FILE5_ID}    ${VOD_FILE5_URL}    ${VOD_FILE5_SIZE}
+    peers_fod    95    125    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+    peers_fod    125    150    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}

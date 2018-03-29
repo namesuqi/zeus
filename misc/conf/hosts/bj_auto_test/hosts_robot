@@ -1,0 +1,13 @@
+# bj_test for robotframework machine
+
+10.6.3.2   stun.auto.cloutropy.com.cn
+10.6.3.2   upgrade.auto.cloutropy.com.cn
+10.6.3.3   ts.auto.cloutropy.com.cn
+10.6.3.4   dir.auto.cloutropy.com.cn
+10.6.3.4   account.auto.cloutropy.com.cn
+10.6.3.4   mysql.auto.cloutropy.com.cn
+10.6.3.5   ctrl.auto.cloutropy.com.cn
+10.6.3.5   upload.auto.cloutropy.com.cn
+10.6.3.6   live-push-hub.auto.cloutropy.com.cn
+10.6.3.7   redis-single.auto.cloutropy.com.cn
+10.6.3.8   redis-cluster.auto.cloutropy.com.cn

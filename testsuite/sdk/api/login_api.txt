@@ -1,0 +1,110 @@
+*** Settings ***
+Library           Collections
+Library           HttpLibrary.HTTP
+Library           ../../../lib/sdk/pcap_controller.py
+Library           ../../../lib/sdk/pcap_http_checker.py
+Library           ../../../lib/sdk/sdk_controller.py
+Variables         ../../../lib/sdk/const.py
+Library           ../../../lib/sdk/tcpdump_filter.py
+Library           ../../../lib/sdk/sdk_request_check.py
+
+*** Test Cases ***
+SdkLoginRequest
+    [Documentation]    Target：Validate sdk send login request
+    [Tags]    bk_sdk_api
+    Deploy Sdk    ${REMOTE_SDK_IP}
+    Stop Sdk
+    Stop Capture
+    Start Capture
+    Start Sdk
+    Sleep    10
+    Stop Sdk
+    Stop Capture
+    Sleep    1
+    Transfer Pcap File
+    ${http_requests}    Parse Http Requests    ${LOCAL_PCAP}
+    Verify Login Request    ${http_requests}    ${LOGIN_REQUEST_PATTERN}
+
+SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    [Timeout]
+    ${timeplay}    Convert to Integer    630
+    ${timend}    Convert to Integer    330
+    ${timeout}    Convert to Integer    960
+    Deploy Sdk    ${REMOTE_SDK_IP}
+    Transfer Exec Files
+    Stop Sdk
+    Start Sdk Check    ${timeout}
+    Start Sdk
+    Sleep    ${timeplay}
+    Start Sdk Live Flv
+    Sleep    ${timend}
+    Transfer Check Log File
+    Stop Sdk
+    Comment    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}
+    Comment    Should Be True    ${reslut}
+
+sdk_api_peer_login
+    [Documentation]    depend on SdkApiGroupResultCollect
+    ...    api name 来源于 zeus/lib/sdk/re_const.py 中的 PATTEN_NAME, 只有被PATTEN_DICT定义捕获的api才能被校验
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Login
+    Should Be True    ${reslut}
+
+sdk_api_peer_logout
+    [Tags]
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Logout
+    Should Be True    ${reslut}
+
+sdk_api_peer_heart_beat
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Heart Beat
+    Should Be True    ${reslut}
+
+sdk_api_peer_report_lsm
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Report LSM
+    Should Be True    ${reslut}
+
+sdk_api_peer_get_task
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Get Task
+    Should Be True    ${reslut}
+
+sdk_api_peer_start_live_flv
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Start Live Flv
+    Should Be True    ${reslut}
+
+sdk_api_peer_get_live_seeds
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Get Live seeds
+    Should Be True    ${reslut}
+
+sdk_api_peer_business_report
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Business Report
+    Should Be True    ${reslut}
+
+sdk_api_peer_control_report
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Control Report
+    Should Be True    ${reslut}
+
+sdk_api_peer_error_report
+    [Documentation]    depend on SdkApiGroupResultCollect
+    [Tags]    sdk_api
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Error Report
+    Should Be True    ${reslut}
+
+sdk_api_peer_statistic_report
+    [Tags]
+    ${reslut}    Verify Log File Result    ${LOCAL_LOG_FILE}    Peer Statistic Report
+    Should Be True    ${reslut}

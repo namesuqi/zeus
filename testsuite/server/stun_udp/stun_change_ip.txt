@@ -1,0 +1,20 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/stun_udp.py
+Variables         ../../../lib/constant/host.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/stun_udp_req.py
+Library           ../../../lib/request/mock_src_ip_udp_request.py
+
+*** Test Cases ***
+sdk_nat_update_req_change_ip_cs
+    [Documentation]    目标：验证向stun的9000端口发送nat_update_req后改变公网ip再使用相同peer_id相同内容发送一次nat_update_req，stun会返回相应的信息（rsp_code=1, timestamp）
+    [Tags]
+    [Setup]
+    ${data}    nat_update_req_data    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}    ${PRI_PORT}    ${True}
+    send_mock_src_ip_request    ${STUN2_HOST}    ${STUN_PORT}    ${MOCK_IP}    ${MOCK_PORT}    ${data}
+    ${response}    sdk_nat_update_req    ${STUN2_HOST}    ${STUN_PORT}    ${PEER_ID}    ${NAT_TYPE}    ${PRI_IP}
+    ...    ${PRI_PORT}    ${LISTENING_PORT}    ${True}
+    ${rsp_code}    parse_stun_rsp_data    ${response}
+    Should Be Equal As Strings    ${rsp_code}    1

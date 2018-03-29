@@ -1,0 +1,141 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+get_ok
+    [Documentation]    目标：验证能够根据URL（video_url)查询播放文件信息
+    ...    说明：video_url，查询所用URL为视频文件URL
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    video_url
+    ...    ${ICNTV_CDN_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${ICNTV_CDN_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${size}    Get Field Value    ${response}    size
+    Should Be Equal    ${size}    @{file_info}[1]
+    ${url}    Get Field Value    ${response}    url
+    Should Be Equal    ${url}    @{file_info}[2]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url2}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url2}    @{file_info}[4]
+
+get_m3U8_ok
+    [Documentation]    目标：验证能够根据 URL（source_url）查询播放文件信息
+    ...    说明：source_url，查询所用URL为注册的源URL,如m3u8的URL
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    source_url
+    ...    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    sleep    2
+    @{file_info}    Db Get Info By Source Url    ${CIWEN_M3U8_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${size}    Get Field Value    ${response}    size
+    Should Be Equal    ${size}    @{file_info}[1]
+    ${url}    Get Field Value    ${response}    url
+    Should Be Equal    ${url}    @{file_info}[2]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url2}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url2}    @{file_info}[4]
+
+no_search_type
+    [Documentation]    目标：验证参数type即查询方式缺失时，返回E_PARAM_MISSING
+    ...    type：video_url；source_url
+    ...
+    ...    注：返回错误状态码为500
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${EMPTY}
+    ...    http://vod.cloutropy.com/video1.mp4
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+no_url
+    [Documentation]    目标：验证参数文件url缺失时，返回E_PARAM_MISSING
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    video_url
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+invalid_video_url
+    [Documentation]    目标：验证URL不存在时，返回E_NOT_FOUND
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    video_url
+    ...    http://m.icntvcdn.com/noexist.mp4
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_FOUND
+
+invalid_url_prefix
+    [Documentation]    目标：验证URL前缀非法时，返回E_INVALID_URL_PREFIX
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    video_url
+    ...    http://invalid.prefix.com/video1.mp4
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    E_INVALID_URL_PREFIX
+
+invalid_m3u8_url
+    [Documentation]    目标：验证M3U8URL非法时，返回E_INTERNAL_SERVER_ERROR
+    [Tags]    abandon
+    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    source_url    ${INVALID_M3U8_URL}
+    sleep    3    # time for server finding
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    source_url
+    ...    ${INVALID_M3U8_URL}
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    E_INTERNAL_SERVER_ERROR
+    ${err_info}    Get Field Value    ${response}    err_info
+    Should Be Equal    ${err_info}    E_M3U8_PARSER
+
+not_match_type
+    [Documentation]    目标：验证查询方式为video_url时，查询所用的url为M3U8格式，返回E_INTERNAL_SERVER_ERROR
+    ...
+    ...    注：返回错误状态码为500
+    [Tags]    abandon
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    video_url
+    ...    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    E_INTERNAL_SERVER_ERROR
+
+new_url_auto_signup
+    [Documentation]    目标：验证可支持未注册文件的自动注册，根据URL查询播放文件信息
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_TS_URL}
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    video_url
+    ...    ${UNREGISTERED_TS_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${UNREGISTERED_TS_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${size}    Get Field Value    ${response}    size
+    Should Be Equal    ${size}    @{file_info}[1]
+    ${url}    Get Field Value    ${response}    url
+    Should Be Equal    http://${url}    @{file_info}[2]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url2}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    http://${url2}    @{file_info}[4]
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_TS_URL}
+
+register_with_wrong_user
+    [Documentation]    目标：验证自动注册时，会校验该url的prefix是否为该user对应的prefix
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_TS_URL}
+    ${response}    Dir Get Play Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    video_url
+    ...    ${UNREGISTERED_TS_URL}
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    E_INVALID_URL_PREFIX
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_TS_URL}

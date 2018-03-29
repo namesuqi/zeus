@@ -1,0 +1,45 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/panel_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+login_OK
+    [Documentation]    目标：输入用户名密码，能够顺利登陆
+    [Tags]    panel
+    ${response}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    8080    ${USER_WASU}    ${PASSWD_WASU}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+invalid_user_login
+    [Tags]    panel
+    ${response}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    USER_INVALID    ${PASSWD_WASU}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INCORRECT_USERNAME_OR_PASSWORD
+
+invalid_passwd_login
+    [Tags]    panel
+    ${response}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    PASSWD_INVALID
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INCORRECT_USERNAME_OR_PASSWORD
+
+login_miss_username
+    [Documentation]    目标：输入用户名缺失，密码，能够顺利登陆
+    [Tags]    panel
+    ${response}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${None}    ${PASSWD_WASU}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+login_miss_password
+    [Documentation]    目标：输入用户名，密码缺失，能够顺利登陆
+    [Tags]    panel
+    ${response}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${None}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING

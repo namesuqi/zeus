@@ -1,0 +1,707 @@
+*** Settings ***
+Documentation     Boss外部接口-客户API
+...
+...               下游 : 添加域名
+Library           ../../../../lib/response/parse_response.py
+Library           ../../../../lib/response/verify_response.py
+Variables         ../../../../lib/constant/request.py
+Library           ../../../../lib/interface/boss/external_api.py
+Library           ../../../../lib/interface/boss/api_data.py
+Library           ../../../../lib/interface/boss/extra_function.py
+Variables         ../../../../lib/interface/boss/api_constant.py
+
+*** Test Cases ***
+domain_name_2level_ok
+    [Documentation]    验证 : domain_name中域级为两级且符合域名规则时,数据库中会新增其域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LEVEL}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_name_lengh_ok
+    [Documentation]    验证 : domain_name中每个数字或字母的序列为62个字节时,数据库中会新增其域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LENGTH_OK}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_length_mix_ok
+    [Documentation]    验证 : domain_name中含数字和字母的序列为62个字节时,数据库中会新增其域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LENGTH_MIX}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_level_ok
+    [Documentation]    验证: 当新增域名的域级为21级时, 服务器可在数据库中增加所有新增域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_LEVEL_TRUE}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_hyphen_ok
+    [Documentation]    验证: 域名之间用20个"-"连接, 服务器可在数据库中增加所有新增域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_HYPHEN_NUMBER}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domains_more_ok
+    [Documentation]    验证: 当新增域名符合注册规则(多个域名)且在数据库中都没有记录时, 服务器可在数据库中增加所有新增域名信息
+    [Tags]    boss_external_apI
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${list}    create list    ${DOMAIN_LEVEL_TRUE}    ${DOMAIN_NAME_LEVEL}
+    ${domain}    delete_domains    ${CUSTOMER_ID_2}    ${list}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${list}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${list}
+    delete_domains    ${CUSTOMER_ID_2}    ${list}
+
+access_key_none
+    [Documentation]    验证 : 请求参数api_access_key为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${None}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${None}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_empty
+    [Documentation]    验证 : 请求参数api_access_key为""时, 会返回200及错误信息, 且不会增加其域名
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_2_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_missing
+    [Documentation]    验证 : 请求参数api_access_key字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_1_DOMAIN_1}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_invalid
+    [Documentation]    验证 : 请求参数api_access_key包含非法字符时, 能正常响应, 返回200及错误信息, 且不会增加其域名信息
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+    ${EMPTY}
+
+access_key_type_number
+    [Documentation]    验证 : 请求参数api_access_key为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${access_key_invalid}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_1_DOMAIN_1}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+timestamp_none
+    [Documentation]    验证 : 请求参数timestamp为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${None}
+    ...    ${sign}    ${CUSTOMER_1_DOMAIN_1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_missing
+    [Documentation]    验证 : 请求参数timestamp字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_2_DOMAIN_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}    ${1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_invalid
+    [Documentation]    验证 : 请求参数timestamp不为非负整数时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${timestamp_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${timestamp_invalid}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${timestamp_invalid}    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_none
+    [Documentation]    验证 : 请求参数sign为None时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${None}    ${CUSTOMER_2_DOMAIN_LIST}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_missing
+    [Documentation]    验证 : 请求参数sign字段缺失时, 会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}    ${2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_invalid
+    [Documentation]    验证 : 请求参数sign为三十二位字符串, 但包含非法字符时, 会返回200及错误信息, 且不会增加其域名信息
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_1_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_type_number
+    [Documentation]    验证 : 请求参数sign为数字类型时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_lengh_not_match
+    [Documentation]    验证 : 请求参数sign不为三十二位时, 会返回400
+    [Tags]    boss_external_api
+    : FOR    ${sign_length_error}    IN    @{SIGN_LENGTH_INCORRECT_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_length_error}    ${CUSTOMER_2_DOMAIN_LIST}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+domains_none
+    [Documentation]    验证 : 请求参数domains字段为None时，服务器可返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${None}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+domains_empty
+    [Documentation]    验证 : 请求参数domains字段为空时，服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    : FOR    ${error}    IN    @{DOMAINS_EMPTY_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${error}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+
+domains_missing
+    [Documentation]    验证：请求参数domains字段缺失时，会返回400
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_2_DOMAIN_LIST}    ${3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+domains_type_number
+    [Documentation]    验证 : 请求参数domains字段为数字类型时，服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    : FOR    ${domains_number}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains_number}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+
+domain_missing
+    [Documentation]    验证: 请求参数domain_names中domain_name字段缺失时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${EMPTY}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_none
+    [Documentation]    验证: 请求参数domain_names中domain_name为None时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${STRING_SPACE}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_type_number
+    [Documentation]    验证: 请求参数domain_names中domain_name为数字类型时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    : FOR    ${domains_error}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${domain}    create list    ${domains_error}
+    \    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+    \    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    \    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_filed_error
+    [Documentation]    验证: 请求参数domain_names中domain_name字段filed错误时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LEVEL}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED_INCORRECT}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_empty_list
+    [Documentation]    验证: 请求参数domain_names中domain_name字段为空列表时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    [Setup]
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${EMPTY_LIST}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_empty_dict
+    [Documentation]    验证: 请求参数domain_names中domain_name字段为空字典时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${EMPTY_DICT}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_null_string
+    [Documentation]    验证: 请求参数domain_names中domain_name为空字符串时,服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${EMPTY}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_char_number_error
+    [Documentation]    验证: domain_name中有空格时,服务器可返回200和其错误信息(数据库不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${STRING_SPACE}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_char_content_error
+    [Documentation]    验证 : domain_name为特殊字符时,服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    : FOR    ${special}    IN    @{SPECIAL_CHARACTER_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    \    ${error}    catenate    ${DOMAIN_NOT_EXIST}    ${special}
+    \    ${domain}    create list    ${error}
+    \    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    \    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${domains}
+    \    Error Code Should Be Equal    ${response}    None
+    \    Status Code Should Be Equal    ${response}    200
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    None
+
+domain_name_start_error
+    [Documentation]    验证 : domain_name单独注册"-"时,服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${HYPHEN}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_hyphen_repeat
+    [Documentation]    验证 : domain_name中"-"连续使用, 服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_HYPHEN_REPEAT}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domains_hypyen_start
+    [Documentation]    验证 : domain_name以"-"开头时, 服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_HYPHEN_START}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_hythen_end
+    [Documentation]    验证 : domain_name以"-"结尾时, 服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_HYPHEN_END}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_hyphen_alone
+    [Documentation]    验证 : domain_name以"-"单独使用时, 服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_HYPHEN_ALONE}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_level_error
+    [Documentation]    验证 : domain_name中域名大于21级时, 服务器可返回200和错误信息(数据库中不会新增其域名信息)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_LEVEL_ERROR}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_already_exist
+    [Documentation]    验证: 新增的多个域名中有域名已存在数据库中时，服务器可返回200和错误信息（数据库中不会增加该请求中的域名信息，数据库中已有的域名记录不会被更改）
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${CUSTOMER_1_DOMAIN_1}    ${CUSTOMER_1_DOMAIN_2}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_UNKNOWN_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_1}    ${domain}
+
+domains_part_invalid
+    [Documentation]    验证: 当新增多个域名，其中部分域名符合注册规则，部分域名无效时，服务器返回200和错误信息，不会在数据库中增加域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NOT_EXIST}    ${DOMAIN_HYPHEN_REPEAT}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domains_repeat_false
+    [Documentation]    验证: 新增的多个域名为重复的且数据库中不存在该域名时, 服务器可返回200和错误信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NOT_EXIST}    ${DOMAIN_NOT_EXIST}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_name_case_true
+    [Documentation]    验证:"验证domain_name参数不区分大小写
+    ...
+    ...
+    ...    数据库中已有域名为""test.api_domain_1"", 现添加"test.Api_domain_1"时,服务器可返回200和错误信息"
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_CASE_SENSITIVE}    ${DOMAIN_EXIST_1}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_name_lengh_error
+    [Documentation]    验证 : domain_name中每个数字或字母的序列为63个字节时,服务器会返回200和错误信息,数据库中不会新增其域名信息
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_NAME_LENGTH_ERROR}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Error Code Should Be Equal    ${response}    None
+    Status Code Should Be Equal    ${response}    200
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+
+domain_hyphen_error
+    [Documentation]    验证: 域名之间用21个"-"连接, 服务器会返回200和错误信息(数据库中不会新增其数据)
+    [Tags]    boss_external_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_2}    ${SECRET_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ${domain}    create list    ${DOMAIN_HYPHEN_ERROR}
+    ${delete}    delete_domains    ${CUSTOMER_ID_2}    ${domain}
+    ${domains}    make_api_param_domain_names    ${DOMAIN_NAME_FILED}    ${domain}
+    ${response}    Customer Domain Create    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_2}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${domains}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    None
+    ${results}    check_domains    ${CUSTOMER_ID_2}    ${domain}
+    delete_domains    ${CUSTOMER_ID_2}    ${domain}

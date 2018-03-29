@@ -1,0 +1,87 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/feature/ahdx_strategy/file_data.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/feature/ahdx_strategy/CreatePeerData.py
+Library           ../../../lib/feature/ahdx_strategy/RangePeerInfo.py
+Library           ../../../lib/feature/ahdx_strategy/MockReport.py
+
+*** Test Cases ***
+prefetch_strategy1
+    [Documentation]    验证当file<10时，所有播放的文件都会出现在prefetch file列表和task列表中
+    [Tags]    ahdx
+    ${login}    NewPeerLogin    100
+    ${heartbeat1}    OnlinePeerNum    100
+    sleep    10
+    #使用5个peer各播放1个不同的文件，file=5，peer=5
+    ${fod1}    FodFile    0    5    1
+    sleep    200
+    #维持，file=5，peer=5
+    ${heartbeat2}    OnlinePeerNum    100
+    ${distibute1}    SeedDistribute    0    5    0    60
+    ${fod2}    FodFile    0    5    1
+    sleep    200
+    #每个文件播放的peer数增加到15，file=5，peer=75
+    ${heartbeat3}    OnlinePeerNum    100
+    ${distributedel1}    SeedDistributeDel    0    5    0    60
+    ${distibute2}    SeedDistribute    0    5    0    50
+    ${fod3}    FodFile    0    5    15
+    sleep    200
+    #维持，file=5，peer=75
+    ${heartbeat4}    OnlinePeerNum    100
+    ${distributedel2}    SeedDistributeDel    0    5    0    50
+    ${distibute3}    SeedDistribute    0    5    0    80
+    ${fod4}    FodFile    0    5    15
+    sleep    200
+    ${distributedel3}    SeedDistributeDel    0    5    0    80
+
+prefetch_strategy2
+    [Documentation]    验证当file=10时，所有播放的文件都会出现在prefetch file列表和task列表中
+    [Tags]    ahdx
+    ${login}    NewPeerLogin    160
+    ${heartbeat1}    OnlinePeerNum    160
+    sleep    10
+    #使用10个peer各播放1个不同的文件，file=10，peer=10
+    ${fod1}    FodFile    0    10    1
+    sleep    200
+    #维持，file=10，peer=10
+    ${heartbeat2}    OnlinePeerNum    160
+    ${distibute1}    SeedDistribute    0    10    0    60
+    ${fod2}    FodFile    0    10    1
+    sleep    200
+    #每个文件播放的peer数增加到15，file=10，peer=150
+    ${heartbeat3}    OnlinePeerNum    160
+    ${distributedel1}    SeedDistributeDel    0    10    0    60
+    ${distibute2}    SeedDistribute    0    10    0    50
+    ${fod3}    FodFile    0    10    15
+    sleep    200
+    #维持，file=10，peer=150
+    ${heartbeat4}    OnlinePeerNum    160
+    ${distributedel2}    SeedDistributeDel    0    10    0    50
+    ${distibute3}    SeedDistribute    0    10    0    80
+    ${fod4}    FodFile    0    10    15
+    sleep    200
+    ${distributedel3}    SeedDistributeDel    0    10    0    80
+
+prefetch_strategy3
+    [Documentation]    验证当file>10时，seedpush排名前10的文件会出现在prefetch file列表和task列表中
+    [Tags]    ahdx
+    ${login}    NewPeerLogin    100
+    ${heartbeat1}    OnlinePeerNum    100
+    sleep    10
+    #前10个文件各使用5个peer播放，最后一个文件使用1个peer播放，file=11，peer=51
+    ${fod1}    FodFile    0    10    5
+    ${fod2}    FodFileSingle    10    11    50    51
+    sleep    200
+    #维持，file=11，peer=51
+    ${heartbeat2}    OnlinePeerNum    100
+    ${distibute1}    SeedDistribute    0    10    0    60
+    ${fod3}    FodFile    0    10    5
+    ${fod4}    FodFileSingle    10    11    50    51
+    sleep    200
+    ${distributedel1}    SeedDistributeDel    0    10    0    60

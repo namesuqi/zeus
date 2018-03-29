@@ -1,0 +1,59 @@
+*** Settings ***
+Library           ../../lib/interface/bp/flume_handler.py
+Variables         ../../lib/interface/bp/flume_constant.py
+Library           ../../lib/decorator/trace.py
+Library           ../../lib/database/pykafka_handler.py
+Variables         ../../lib/constant/host.py
+Library           ../../lib/interface/bp/log_writer.py
+
+*** Test Cases ***
+topic_ok
+    [Tags]    kafka_flume_old
+    Comment    :FOR    ${topic}    IN    @{TOPIC_LIST}
+    Comment    \    ${result}    Kafka Flume Ok    ${topic}    ${keyword}
+    Comment    \    Should Be Equal    ${result}    ${True}
+    ${result}    Kafka Flume Ok    ${TOPIC_PEER_INFO}    ${KEYWORD_PEER_ID}
+    Should Be Equal    ${result}    ${True}
+
+topic_invalid
+    [Tags]    kafka_flume_old
+    Comment    :FOR    ${topic}    IN    @{TOPIC_LIST}
+    Comment    \    ${result}    Kafka Flume Invalid    ${topic}
+    Comment    \    Should Be Equal    ${result}    ${True}
+    ${result}    Kafka Flume Invalid    ${TOPIC_PEER_INFO}
+    Should Be Equal    ${result}    ${True}
+
+topic_data_ok
+    [Tags]    kafka_flume
+    Pykafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_PEER_INFO}    ${CONSUMER_GROUP_AUTO_TEST}
+    sleep    3
+    ${write_logs}    Remote Write Logs    ${FLUME_HOST}    ${FLUME_USERNAME}    ${FLUME_PASSWORD}    ${FLUME_LOG_PATH}    ${OK_PEER_INFO_LOG_PATH}
+    ${kafka_logs_all_info}    Pykafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_PEER_INFO}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${default_info}    Schema Default    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_PEER_INFO}
+    ${result}    Judge Kafka Logs Info    ${write_logs}    ${kafka_logs_all_info}    ${default_info}    ${TOPIC_PEER_INFO}    ${KEYWORD_PEER_ID}
+    Should Be True    ${result}
+
+topic_data_invalid
+    [Tags]    kafka_flume
+    Pykafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_PEER_INFO}    ${CONSUMER_GROUP_AUTO_TEST}
+    sleep    3
+    ${write_logs}    Remote Write Logs    ${FLUME_HOST}    ${FLUME_USERNAME}    ${FLUME_PASSWORD}    ${FLUME_LOG_PATH}    ${INVALID_PEER_INFO_LOG_PATH}
+    ${kafka_logs_all_info}    Pykafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${TOPIC_PEER_INFO}    ${CONSUMER_GROUP_AUTO_TEST}
+    ${logs_count}    Get Length    ${kafka_logs_all_info}
+    Should Be Equal As Strings    ${logs_count}    1
+
+topic_data_partition
+    [Tags]    kafka_flume
+    : FOR    ${topic}    IN    @{PARTITION_LOG_TOPICS}
+    \    Pykafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${topic}    ${CONSUMER_GROUP_AUTO_TEST}
+    sleep    3
+    ${write_logs}    Remote Write Logs    ${FLUME_HOST}    ${FLUME_USERNAME}    ${FLUME_PASSWORD}    ${FLUME_LOG_PATH}    ${FLUME_PARTITION_LOG_PATH}
+    ${all_logs_count}    Set Variable    ${0}
+    : FOR    ${topic}    IN    @{PARTITION_LOG_TOPICS}
+    \    ${kafka_logs_all_info}    Pykafka Consumer    ${KAFKA_HOST}    ${SCHEMA_HOST}    ${SCHEMA_PORT}    ${topic}
+    \    ...    ${CONSUMER_GROUP_AUTO_TEST}
+    \    ${logs_num}    Get Length    ${kafka_logs_all_info}
+    \    ${all_logs_count}    Evaluate    ${all_logs_count}+${logs_num}
+    \    ${result}    Judge Logs Partition    ${kafka_logs_all_info}
+    \    Should Be True    ${result}
+    Should Be Equal    ${all_logs_count}    ${100}

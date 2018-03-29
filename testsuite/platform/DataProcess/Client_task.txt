@@ -1,0 +1,23 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_ClientExceptionCleaned_data
+    [Tags]    platform_test
+    createtabledata    ClientExceptionCleaned
+
+DailyClientErrorsStatisticsJob_task
+    [Documentation]    prerequisite: ClientExceptionCleaned_data created
+    [Tags]    platform_task
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyClientErrorsStatisticsJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyClientErrorsStatisticsJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyClientErrorsStatisticsJob['name']}    ${varlist}
+    ${re}    compareresultmysql    ${DailyClientErrorsStatisticsJob['name']}    select peer_prefix, err_type, error_count, play_type from ${DailyClientErrorsStatisticsJob ['mysqltable']} where date_time=${recorddate}
+    Should Be True    ${re}

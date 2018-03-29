@@ -1,0 +1,67 @@
+*** Settings ***
+Library           ../../../lib/platform/dataprocess/preparejar.py
+Library           ../../../lib/platform/dataprocess/pipeofodps.py
+Library           ../../../lib/platform/dataprocess/comparefile.py
+Library           ../../../lib/platform/dataprocess/createodpsdata.py
+Variables         ../../../lib/platform/dataprocess/constvars.py
+Library           ../../../lib/platform/dataprocess/startodpsjob.py
+
+*** Test Cases ***
+create_DownloadFlowCleaned_data
+    [Tags]    platform_test
+    createtabledata    DownloadFlowCleaned
+
+TodayP2PRateJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    2
+    ${var1}    Convert to Number    0.175
+    ${var}    Convert to Integer    19
+    @{varlist}    Create List    hour=true    export=true    time=19
+    createjobexpecteddata    ${TodayP2PRateJob['name'] }    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayP2PRateJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${TodayP2PRateJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${TodayP2PRateJob['name']}    select username, url, p2p_rate, play_type from ${TodayP2PRateJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+HourP2PRatePerUserJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    2
+    ${var1}    Convert to Number    0.0001
+    ${var}    Convert to Integer    22
+    @{varlist}    Create List    export=true    hour=true    time=22
+    createjobexpecteddata    ${HourP2PRatePerUserJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${HourP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${HourP2PRatePerUserJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${HourP2PRatePerUserJob['name']}    select username, hour_time, p2p_rate, play_type from ${HourP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+DailyP2PRatePerUserJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.0001
+    @{varlist}    Create List    export=true
+    createjobexpecteddata    ${DailyP2PRatePerUserJob['name']}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${DailyP2PRatePerUserJob ['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${DailyP2PRatePerUserJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${DailyP2PRatePerUserJob['name']}    select username, p2p_rate, play_type from ${DailyP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}
+
+TodayP2PRatePerUserJob_task
+    [Documentation]    prerequisite: DownloadFlowCleaned_data created
+    [Tags]    accuracy    platform_task
+    ${var0}    Convert to Integer    1
+    ${var1}    Convert to Number    0.075
+    ${var}    Convert to Integer    23
+    @{varlist}    Create List    export=true    hour=true    time=23
+    createjobexpecteddata    ${TodayP2PRatePerUserJob['name']}    ${var}
+    perpareconfig    ${workpath}    ${configpath}
+    operatemysqldata    delete from ${TodayP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}
+    startodpsjob    ${workpath}    ${TodayP2PRatePerUserJob['name']}    ${varlist}
+    ${re}    compareresultabspatternmysql    ${TodayP2PRatePerUserJob['name']}    select username, p2p_rate, play_type from ${TodayP2PRatePerUserJob['mysqltable']} where date_time=${recorddate}    ${var0}    ${var1}
+    Should Be True    ${re}

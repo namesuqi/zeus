@@ -1,0 +1,581 @@
+*** Settings ***
+Suite Setup       Deploy Penetrate Sdk    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+Library           ../../../lib/special/penetrate/pene_lib.py
+Variables         ../../../lib/constant/pene.py
+
+*** Test Cases ***
+penetrate_1to4
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    1
+    ${ReceiveNatType}    Set Variable    4
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_2to4
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    2
+    ${ReceiveNatType}    Set Variable    4
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_1to1
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    1
+    ${ReceiveNatType}    Set Variable    1
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_1to2
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    1
+    ${ReceiveNatType}    Set Variable    2
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_1to3
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    1
+    ${ReceiveNatType}    Set Variable    3
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_2to1
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    2
+    ${ReceiveNatType}    Set Variable    1
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_2to2
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    2
+    ${ReceiveNatType}    Set Variable    2
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_2to3
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    2
+    ${ReceiveNatType}    Set Variable    3
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_3to1
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    3
+    ${ReceiveNatType}    Set Variable    1
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_3to2
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    3
+    ${ReceiveNatType}    Set Variable    2
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_3to3
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    3
+    ${ReceiveNatType}    Set Variable    3
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_3to4
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    3
+    ${ReceiveNatType}    Set Variable    4
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Not Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_4to1
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    4
+    ${ReceiveNatType}    Set Variable    1
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_4to2
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    4
+    ${ReceiveNatType}    Set Variable    2
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_4to3
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    4
+    ${ReceiveNatType}    Set Variable    3
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Not Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3
+
+penetrate_4to4
+    [Tags]    penetrate
+    ${SendNatType}    Set Variable    4
+    ${ReceiveNatType}    Set Variable    4
+    ${LogDir}    Set Variable    ${SendNatType}_to_${ReceiveNatType}
+    ${result}    Start Dummy Nat    ${SEND_NAT_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Start Dummy Nat    ${RECEIVE_NAT_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    Sleep    5
+    ${result}    Start Sdk    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Login    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${SEND_SDK_IP}    ${SendNatType}
+    Should Be True    ${result}
+    ${result}    Check Sdk Nat Type    ${RECEIVE_SDK_IP}    ${ReceiveNatType}
+    Should Be True    ${result}
+    ${result}    Mock Ts Info    ${RECEIVE_SDK_IP}
+    Should Be True    ${result}
+    ${result}    Start Sdk Vod    ${SEND_SDK_IP}
+    Should Be True    ${result}
+    Sleep    10
+    ${result}    Check Pene Log Steps    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    ${SendNatType}
+    Should Not Be True    ${result}
+    Comment    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}
+    Comment    Stop Dummy Nat Running    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}
+    Comment    Collect Original Nat Log    ${SEND_NAT_IP}    ${LogDir}    _send
+    Comment    Collect Original Nat Log    ${RECEIVE_NAT_IP}    ${LogDir}    _receive
+    [Teardown]    Run Keywords    Stop Sdk Running    ${SEND_SDK_IP}    ${RECEIVE_SDK_IP}    AND    Stop Dummy Nat Running
+    ...    ${SEND_NAT_IP}    ${RECEIVE_NAT_IP}    AND    Sleep    3

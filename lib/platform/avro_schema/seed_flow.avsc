@@ -1,0 +1,17 @@
+{
+    "type":"record",
+    "name":"seed_flow",
+    "fields":[
+        {"name":"id","type":["null","string"],"default":null},
+        {"name":"timestamp","type":"long"},
+        {"name":"peer_id","type":"string"},
+        {"name":"file_id","type":"string"},
+        {"name":"file_type","type":"string"},
+        {"name":"upload","type":"long"},
+        {"name":"download","type":"long"},
+        {"name":"public_ip","type":["null","string"],"default":null},
+        {"name":"input_time","type":["null","long"],"default":null},
+        {"name":"sdk_agent_name","type":["null","string"],"default":null},
+        {"name":"sdk_agent_version","type":["null","string"],"default":null}
+    ]
+}

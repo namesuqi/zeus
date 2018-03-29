@@ -1,0 +1,142 @@
+*** Settings ***
+Default Tags
+Test Timeout      6030 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+delete_ok
+    [Documentation]    目标：验证能够删除指定文件记录
+    ...    参数：filepath，sourcetype
+    ...
+    ...    验证步骤：新建文件记录；获取该文件路径；删除该文件记录
+    ...    预期结果：能够删除，正常返回
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}    yes
+    ...    false
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    Comment    #filepath    @{FileInfo}[3]
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${check_exist}    Db Check File Exist    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    Should Not Be True    ${check_exist}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+no_file_path
+    [Documentation]    目标：验证参数filepath缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    ${EMPTY}
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+no_source_type_ok
+    [Documentation]    目标：验证不输入参数sourcetype时，能删除与filepath对应的数据源类型为OSS的记录，即sourcetype默认值为OSS
+    ...
+    ...    验证步骤：新建sourcetype为OSS的文件记录；不输入sourcetype参数，进行删除；
+    ...
+    ...    预期结果：该文件记录能被删除
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_OSS}    yes
+    ...    false
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${check_exist}    Db Check File Exist    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_OSS}
+    Should Not Be True    ${check_exist}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+no_source_type
+    [Documentation]    目标：验证不输入参数sourcetype时，无法删除数据源类型不是OSS的文件记录
+    ...
+    ...    验证步骤：新建sourcetype为CDN的文件记录；不输入sourcetype参数，进行删除；
+    ...
+    ...    预期结果：该文件记录不能被删除
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}    yes
+    ...    false
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PATH_NON_EXISTS
+    ${check_exist}    Db Check File Exist    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    Should Be True    ${check_exist}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+invalid_file_path
+    [Documentation]    目标：验证要删除的文件记录不存在时，返回E_PATH_NON_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}    yes
+    ...    false
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PATH_NON_EXISTS
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+invalid_user_id
+    [Documentation]    目标：验证filepath对应的userid不正确时，删除返回E_PATH_NON_EXISTS
+    ...
+    ...    验证步骤：在用户leigang下新建文件记录；userid参数设为icntv后，删除该文件记录
+    ...
+    ...    预期结果：不能删除该记录，返回E_PATH_NON_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}    yes
+    ...    false
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_ICNTV}    @{FileInfo}[3]
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PATH_NON_EXISTS
+    ${check_exist}    Db Check File Exist    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    Should Be True    ${check_exist}
+    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+incorrect_source_type
+    [Documentation]    目标：验证filepath对应的sourcetype不正确时，删除返回E_PATH_NON_EXISTS
+    ...
+    ...    验证步骤：新建sourcetype为CDN的文件记录；删除该文件记录时，将sourcetype参数设为M3U8
+    ...
+    ...    预期结果：不能删除该记录，返回E_PATH_NON_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}    yes
+    ...    false
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    ${response}    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    ...    M3U8
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PATH_NON_EXISTS
+    ${check_exist}    Db Check File Exist    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    Should Be True    ${check_exist}
+    Dir Delete File Path    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]    ${SOURCE_TYPE_CDN}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}

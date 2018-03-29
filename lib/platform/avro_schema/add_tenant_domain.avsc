@@ -1,0 +1,9 @@
+{
+    "type":"record",
+    "name":"add_tenant_domain",
+    "fields":[
+        {"name":"tenant_name","type":"string"},
+        {"name":"domain","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

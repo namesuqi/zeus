@@ -1,0 +1,10 @@
+{
+    "type":"record",
+    "name":"sdk_directional_task_live",
+    "fields":[
+        {"name":"timestamp","type":"long"},
+        {"name":"file_id","type":"string"},
+        {"name":"peer_id","type":"string"},
+        {"name":"operation","type":"string"}
+    ]
+}

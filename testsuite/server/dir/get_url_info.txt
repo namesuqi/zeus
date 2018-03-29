@@ -1,0 +1,82 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+get_flv_ok
+    [Documentation]    目标：验证能够获取flv文件url的相关信息（file_id，fsize，psize，ppc）
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Url Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${CIWEN_FLV_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${CIWEN_FLV_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+
+get_ts_server_ok
+    [Documentation]    目标：验证能够获取ts格式文件url的相关信息（file_id，fsize，psize，ppc）
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Url Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ICNTV_TS_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${ICNTV_TS_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+
+get_m3u8_ok
+    [Documentation]    目标：验证能够获取m3u8文件url的相关信息（file_id，fsize，psize，ppc）
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Url Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${CIWEN_M3U8_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+
+no_url
+    [Documentation]    目标：验证参数（url）缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Url Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+invalid_url
+    [Documentation]    目标：验证url不存在（例文件名错误）时，返回E_FILE_NON_EXISTS
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Url Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${INVALID_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_FILE_NON_EXISTS
+
+invalid_prefix
+    [Documentation]    目标：验证url的prefix不存在时，返回E_INVALID_URL_PREFIX
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Url Info    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${INVALID_PREFIX_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_URL_PREFIX

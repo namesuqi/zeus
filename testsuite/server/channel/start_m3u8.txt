@@ -1,0 +1,59 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Library           ../../../lib/business/Channel.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/response/VerifyResponse.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/live.py
+
+*** Test Cases ***
+StartOK
+    [Tags]    old_channel
+    ${response}    ChannelStartM3u8    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    ${LIVE_USER}    ${LIVE_PID}
+    ...    ${CHANNEL_M3U8}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+NoUser
+    [Tags]    old_channel
+    ${response}    ChannelStartM3u8    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    \    ${LIVE_PID}
+    ...    ${CHANNEL_M3U8}
+    VerifyStatusCode    ${response}    400
+    VerifyErrorCode    ${response}    None
+
+NoPid
+    [Tags]    old_channel
+    ${response}    ChannelStartM3u8    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    ${LIVE_USER}    ${EMPTY}
+    ...    ${CHANNEL_M3U8}
+    VerifyStatusCode    ${response}    400
+    VerifyErrorCode    ${response}    None
+
+NoUrl
+    [Tags]    old_channel
+    ${response}    ChannelStartM3u8    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    ${LIVE_USER}    ${LIVE_PID}
+    ...    ${EMPTY}
+    VerifyStatusCode    ${response}    400
+    VerifyErrorCode    ${response}    None
+
+UrlNotExist
+    [Tags]    old_channel
+    ${response}    ChannelStartM3u8    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    ${LIVE_USER}    ${LIVE_PID}
+    ...    ${CHANNEL_INVALID}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_NOT_FOUND
+
+WrongUser
+    [Tags]    old_channel
+    ${response}    ChannelStartM3u8    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    ${WRONG_USER}    ${LIVE_PID}
+    ...    ${CHANNEL_M3U8}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+
+WrongUrl
+    [Tags]    old_channel
+    ${response}    ChannelStartHLS    ${HTTP}    ${LIVE_CHANNEL_HOST}    ${LIVE_CHANNEL_HOST}    ${LIVE_USER}    ${LIVE_PID}
+    ...    ${CHANNEL_TS}
+    VerifyStatusCode    ${response}    400
+    VerifyErrorCode    ${response}    None

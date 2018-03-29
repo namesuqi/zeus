@@ -1,0 +1,19 @@
+*** Settings ***
+Library           ../../../lib/feature/multi_host/Pushhub.py
+Variables         ../../../lib/feature/multi_host/push_data.py
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+
+*** Test Cases ***
+Ip_map
+    ${res}    IP_Map    ${IP_MAP_BODY}
+
+IpRepeat
+    ${res}    IP_Map    ${IP_REPEAT}
+
+HostRepeat
+    ${res}    IP_Map    ${HOST_REPEAT}
+
+HostInvalid
+    ${res}    IP_Map    ${HOST_INVALID}

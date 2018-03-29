@@ -1,0 +1,19 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/monitor_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+flow_get_upload_OK
+    [Tags]    monitor
+    ${response}    Flow Get Upload    ${HTTP}    ${MONITOR_HOST}    ${MONITOR_PORT}    1474905600000    1474946545621
+    ...    hour    all
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

@@ -1,0 +1,134 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_deploy.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+
+*** Test Cases ***
+post_servers_ok
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（主机已部署，且服务在线）
+    ...
+    ...    目前只要参数正确，服务器就会返回200和success
+    ...
+    ...    并不能判断部署是否成功（可查看前端页面版本）
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+servers_not_deployed
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（主机未部署服务）
+    ...
+    ...    应返回200和错误信息
+    ...
+    ...    目前只要参数正确，服务器就会返回200和success
+    ...
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST_NOT_DEPLOYED}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+servers_no_host
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（主机不存在时）
+    ...
+    ...    应返回200和错误信息
+    ...
+    ...    目前未对主机参数进行校验，都会返回200和success
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${PARAM_ERROR}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+servers_param_error
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（host参数错误）
+    ...
+    ...    如host加上[]
+    ...
+    ...    应返回200和错误信息
+    ...
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST_ERROR}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    Should Be Equal    ${res_data}    {"msg":"json: cannot unmarshal array into Go value of type string"}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    json: cannot unmarshal array into Go value of type string
+
+post_value_error
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（value参数错误）
+    ...
+    ...    如"1.0.0@3.12.1"，去掉“”
+    ...
+    ...    应返回200和错误信息
+    ...
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST}    ${SERVER_VERSION}
+    ...    ${VALUE_ERROR}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+
+servers_status_not_ok
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（主机已部署服务，但服务异常）
+    ...
+    ...    应返回200和错误信息
+    ...
+    ...    目前只要参数正确，服务器就会返回200和success
+    ...
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST_ABNORMAL}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+post_servers_redis_disconnected
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（redis连接失败）
+    ...
+    ...    应返回200和错误信息
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+post_servers_mysql_disconnected
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（mysql连接失败）
+    ...
+    ...    应返回200和错误信息
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+
+post_servers_control_no_response
+    [Documentation]    接收agent汇报的服务信息并秒级汇报（mysql连接失败）
+    ...
+    ...    应返回200和错误信息
+    [Tags]    post servers
+    ${response}    Post Host Servers    ${HTTP}    ${CONTROL_DEPLOY_HOST}    ${CONTROL_DEPLOY_PORT}    ${HOST}    ${SERVER_VERSION}
+    ...    ${VALUE}    ${TYPE}    ${SERVICE_STUN_GO}    ${SERVER_STATUS}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}

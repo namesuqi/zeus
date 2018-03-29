@@ -1,0 +1,148 @@
+*** Settings ***
+Default Tags
+Test Timeout      20 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+start_ok
+    [Documentation]    目标：验证客户端起播已存在的m3u8文件时，能够请求到播放url的信息
+    [Tags]    abandon
+    [Setup]
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${CIWEN_M3U8_URL}
+    ${data_file_url}    Get Field Value    ${response}    data_file_url
+    Should Be Equal    ${data_file_url}    @{file_info}[2]
+    ${data_file_id}    Get Field Value    ${response}    data_file_id
+    Should Be Equal    ${data_file_id}    @{file_info}[0]
+    ${data_fsize}    Get Field Value    ${response}    data_fsize
+    Should Be Equal    ${data_fsize}    @{file_info}[1]
+    ${data_psize}    Get Field Value    ${response}    data_psize
+    Should Be Equal    ${data_psize}    @{file_info}[5]
+    ${data_ppc}    Get Field Value    ${response}    data_ppc
+    Should Be Equal    ${data_ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url}    @{file_info}[4]
+    ${data_cppc}    Get Field Value    ${response}    data_cppc
+    Should Be Equal As Numbers    ${data_cppc}    12
+    [Teardown]
+
+start_ok_with_version
+    [Documentation]    目标：验证客户端（有version参数）起播已存在的m3u8文件时，能够请求到播放url的信息
+    [Tags]    abandon
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${CIWEN_M3U8_URL}    1
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${CIWEN_M3U8_URL}
+    ${data_file_url}    Get Field Value    ${response}    data_file_url
+    Should Be Equal    ${data_file_url}    @{file_info}[2]
+    ${data_file_id}    Get Field Value    ${response}    data_file_id
+    Should Be Equal    ${data_file_id}    @{file_info}[0]
+    ${data_fsize}    Get Field Value    ${response}    data_fsize
+    Should Be Equal    ${data_fsize}    @{file_info}[1]
+    ${data_psize}    Get Field Value    ${response}    data_psize
+    Should Be Equal    ${data_psize}    @{file_info}[5]
+    ${data_ppc}    Get Field Value    ${response}    data_ppc
+    Should Be Equal    ${data_ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url}    @{file_info}[4]
+    ${data_cppc}    Get Field Value    ${response}    data_cppc
+    Should Be Equal As Numbers    ${data_cppc}    12
+
+no_user_name
+    [Documentation]    目标：验证参数username缺失时，返回400
+    [Tags]    abandon
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    \    ${PEER_ID1}
+    ...    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+no_peer_id
+    [Documentation]    目标：验证参数（peerid）缺失时，返回400
+    [Tags]    abandon
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${EMPTY}
+    ...    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+no_url
+    [Documentation]    目标：验证参数（m3u8文件url）缺失时，返回400
+    [Tags]    abandon
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+start_flv_url
+    [Documentation]    目标：验证未注册文件不是m3u8格式时，走该接口无法注册，返回E_REGISTERING， 然后验证数据库中该文件不存在（该用例中所用url为flv格式）
+    [Tags]    abandon
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${UNREGISTERED_FLV_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_REGISTERING
+    sleep    5
+    ${file_info}    Db Get Info By Source Url    ${UNREGISTERED_FLV_URL}
+    Should Be Empty    ${file_info}
+
+invalid_m3u8_url
+    [Documentation]    目标：验证url不存在时，返回500
+    [Tags]    abandon
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${INVALID_M3U8_URL}
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    None
+
+start_m3u8
+    [Documentation]    目标：验证客户端起播未注册的m3u8文件，该文件能够自动注册（注：准备测试的url尽量保证之前没有用过）
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_M3U8_URL}
+    ${file}    Db Get Info By Source Url    ${UNREGISTERED_M3U8_URL}
+    Should Be Empty    ${file}
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${UNREGISTERED_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    sleep    10
+    @{file_info}    Db Get Info By Source Url    ${UNREGISTERED_M3U8_URL}
+    Should Be Equal    @{file_info}[4]    ${UNREGISTERED_M3U8_URL}
+    ${response}    Dir Sdk Start M3u8    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${UNREGISTERED_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    comment    start to play m3u8 \ after register, and verify response value
+    ${data_file_url}    Get Field Value    ${response}    data_file_url
+    Should Be Equal    ${data_file_url}    @{file_info}[2]
+    ${data_file_id}    Get Field Value    ${response}    data_file_id
+    Should Be Equal    ${data_file_id}    @{file_info}[0]
+    ${data_fsize}    Get Field Value    ${response}    data_fsize
+    Should Be Equal    ${data_fsize}    @{file_info}[1]
+    ${data_psize}    Get Field Value    ${response}    data_psize
+    Should Be Equal    ${data_psize}    @{file_info}[5]
+    ${data_ppc}    Get Field Value    ${response}    data_ppc
+    Should Be Equal    ${data_ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url}    @{file_info}[4]
+    ${data_cppc}    Get Field Value    ${response}    data_cppc
+    Should Be Equal As Numbers    ${data_cppc}    12
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_M3U8_URL}

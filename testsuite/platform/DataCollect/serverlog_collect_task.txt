@@ -1,0 +1,114 @@
+*** Settings ***
+Library           ../../../lib/platform/datacollect/Action/Comparefile.py
+Library           ../../../lib/platform/datacollect/Action/ODPScommand.py
+Library           ../../../lib/platform/datacollect/WriteServerLog.py
+Variables         ../../../lib/platform/datacollect/GlobalVars/SERVER.py
+
+*** Test Cases ***
+write_all_log
+    [Tags]    platform_collect_server_pre    regression    platform_collect_server
+    writealllog
+
+write_server_peer_info
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_peer_info['name']}
+
+write_server_peer_online_time
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_peer_online_time['name']}
+
+write_server_file_seed_change
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_file_seed_change['name']}
+
+write_server_add_file
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_add_file['name']}
+
+write_server_delete_file
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_delete_file['name']}
+
+write_server_fod_report
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_fod_report['name']}
+
+write_server_live_create_channel
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_live_create_channel['name']}
+
+write_server_live_progress
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_live_progress['name']}
+
+write_server_sdk_lsm
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_sdk_lsm['name']}
+
+write_server_seeds_allocate
+    [Tags]    platform_collect_server_pre
+    writeonelog    ${server_seeds_allocate['name']}
+
+WAITTIME
+    [Tags]    platform_collect_server    regression
+    Evaluate    time.sleep(260)    time
+
+server_peer_info
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_peer_info['name']}    ${server_peer_info['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_peer_info['name']}
+    Should Be True    ${reslut}
+
+server_peer_online_time
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_peer_online_time['name']}    ${server_peer_online_time['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_peer_online_time['name']}
+    Should Be True    ${reslut}
+
+server_file_seed_change
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_file_seed_change['name']}    ${server_file_seed_change['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_file_seed_change['name']}
+    Should Be True    ${reslut}
+
+server_add_file
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_add_file['name']}    ${server_add_file['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_add_file['name']}
+    Should Be True    ${reslut}
+
+server_delete_file
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_delete_file['name']}    ${server_delete_file['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_delete_file['name']}
+    Should Be True    ${reslut}
+
+server_fod_report
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_fod_report['name']}    ${server_fod_report['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_fod_report['name']}
+    Should Be True    ${reslut}
+
+server_live_create_channel
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_live_create_channel['name']}    ${server_live_create_channel['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_live_create_channel['name']}
+    Should Be True    ${reslut}
+
+server_live_progress
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_live_progress['name']}    ${server_live_progress['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdataOutputwithoutPIP    ${server_live_progress['name']}
+    Should Be True    ${reslut}
+
+server_sdk_lsm
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_sdk_lsm['name']}    ${server_sdk_lsm['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdataOutputwithoutPIP    ${server_sdk_lsm['name']}
+    Should Be True    ${reslut}
+
+server_seeds_allocate
+    [Tags]    platform_collect_server    regression
+    downloaddatafromodps    ${server_seeds_allocate['name']}    ${server_seeds_allocate['inputtable']}    ${server_recorddate}
+    ${reslut}    compareODPSdata    ${server_seeds_allocate['name']}
+    Should Be True    ${reslut}

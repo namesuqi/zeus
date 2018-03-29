@@ -1,0 +1,14 @@
+{
+    "type":"record",
+    "name":"fod_report",
+    "fields":[
+        {"name":"id","type":"string"},
+        {"name":"peer_id","type":"string"},
+        {"name":"url","type":["null","string"],"default":null},
+        {"name":"file_id","type":["null","string"],"default":null},
+        {"name":"fsize","type":["null","long"],"default":null},
+        {"name":"play_type","type":"string"},
+        {"name":"public_ip","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

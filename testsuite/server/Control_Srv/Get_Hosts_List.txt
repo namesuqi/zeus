@@ -1,0 +1,18 @@
+*** Settings ***
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/ops/control_constant.py
+Library           ../../../lib/interface/ops/control_srv.py
+
+*** Test Cases ***
+get_hosts_list_ok
+    [Tags]    get hosts list
+    ${response}    Ops User Login    ${HTTP}    ${CONTROL_SRV_HOST}    ${CONTROL_SRV_PORT}    ${USERNAME}    ${PASSWORD}
+    ${cookie}    Get Cookies Value    ${response}
+    ${response2}    Get Api Hosts List    ${HTTP}    ${CONTROL_SRV_HOST}    ${CONTROL_SRV_PORT}    ${cookie}
+    Status Code Should Be Equal    ${response2}    200
+    Error Code Should Be Equal    ${response2}    None
+    ${res_data}    get_response_data    ${response2}
+    log    ${res_data}

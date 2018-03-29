@@ -1,0 +1,192 @@
+*** Settings ***
+Documentation     stun-->stun-hub:8000 请求rrpc命令(join_lf,leave_lf,p2p_enable,p2p_disable)
+Default Tags
+Test Timeout
+Variables         ../../../lib/interface/cp/stun_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/database/redis_handler.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/interface/cp/stun_hub_server.py
+
+*** Test Cases ***
+rrpc_empty
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表为空
+    ...
+    ...    验证 : stun-hub在指定时间内(10秒)找不到数据时, 能返回200和{}
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${data}    Get Response Data    ${response}
+    Should Be Equal As Strings    ${data}    {}
+
+rrpc_one_join_peer_id
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表中有且仅有一条cmd为"join_lf"的信息
+    ...
+    ...    验证 : stun-hub能返回200和对应的返回体(cmd, file_id, file_url, peer_ids)
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}    ${PEER_ID_ONLINE}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal    ${file_url}    ${FILE_URL}
+    @{peer_id}    Get Field Value    ${response}    peer_ids
+    Should Be Equal    @{peer_id}[0]    ${PEER_ID_ONLINE}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${FILE_ID}
+    ${cmd}    Get Field Value    ${response}    cmd
+    Should Be Equal    ${cmd}    join_lf
+
+rrpc_one_leave_peer_id
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表中有且仅有一条cmd为"leave_lf"的信息
+    ...
+    ...    验证 : stun-hub能返回200和对应的返回体(cmd, file_id, peer_ids)
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Leave Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${PEER_ID_ONLINE}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${FILE_ID}
+    @{peer_id}    Get Field Value    ${response}    peer_ids
+    Should Be Equal    @{peer_id}[0]    ${PEER_ID_ONLINE}
+    ${cmd}    Get Field Value    ${response}    cmd
+    Should Be Equal    ${cmd}    leave_lf
+
+rrpc_one_join_peer_ids
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表中有且仅有一条cmd为"join_lf"的信息, 且"peer_ids"列表含有多个peer_id
+    ...
+    ...    验证 : stun-hub能返回200和对应的返回体(cmd, file_id, file_url, peer_ids)
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[1]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[2]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[3]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}    ${PEER_IDS_MANY1}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal    ${file_url}    ${FILE_URL}
+    ${peer_ids}    Get Field Value    ${response}    peer_ids
+    Should Be Equal    ${peer_ids}    ${PEER_IDS_MANY1}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${FILE_ID}
+    ${cmd}    Get Field Value    ${response}    cmd
+    Should Be Equal    ${cmd}    join_lf
+
+rrpc_one_leave_peer_ids
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表中有且仅有一条cmd为"leave_lf"的信息, 且"peer_ids"列表含有多个peer_id
+    ...
+    ...    验证 : stun-hub能返回200和对应的返回体(cmd, file_id, peer_ids)
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[0]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[1]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[2]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    @{PEER_IDS_MANY1}[3]    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Leave Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${PEER_IDS_MANY1}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${peer_ids}    Get Field Value    ${response}    peer_ids
+    Should Be Equal    ${peer_ids}    ${PEER_IDS_MANY1}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${FILE_ID}
+    ${cmd}    Get Field Value    ${response}    cmd
+    Should Be Equal    ${cmd}    leave_lf
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal As Strings    ${file_url}    None
+
+rrpc_many_mixed_one
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表中有多条信息
+    ...
+    ...    验证 : stun-hub收到get_lf_rrpc请求后, 能返回200, 及当前RRPC_[stun_ip]列表的最后一条(最早输入的)信息
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}    ${PEER_ID1}
+    Hub Leave Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${PEER_ID2}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_url}    Get Field Value    ${response}    file_url
+    Should Be Equal    ${file_url}    ${FILE_URL}
+    @{peer_id}    Get Field Value    ${response}    peer_ids
+    Should Be Equal    @{peer_id}[0]    ${PEER_ID1}
+    ${cmd}    Get Field Value    ${response}    cmd
+    Should Be Equal    ${cmd}    join_lf
+
+rrpc_many_mixed_two
+    [Documentation]    场景 : redis中RRPC_[stun_ip]列表中有多条信息; 已经发送过一次请求后
+    ...
+    ...    验证 : stun-hub再次收到get_lf_rrpc请求后, 能返回200, 及当前RRPC_[stun_ip]列表的最后一条信息(确brpop)
+    [Tags]    stun-hub
+    [Setup]    Clear Redis List    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID1}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}    ${PEER_ID1}
+    Hub Leave Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${PEER_ID2}
+    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}    ${PEER_ID2}
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{peer_id}    Get Field Value    ${response}    peer_ids
+    Should Be Equal    @{peer_id}[0]    ${PEER_ID1}
+    ${cmd}    Get Field Value    ${response}    cmd
+    Should Be Equal    ${cmd}    join_lf
+    ${response2}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response2}    200
+    Error Code Should Be Equal    ${response2}    None
+    @{peer_id}    Get Field Value    ${response2}    peer_ids
+    Should Be Equal    @{peer_id}[0]    ${PEER_ID2}
+    ${cmd}    Get Field Value    ${response2}    cmd
+    Should Be Equal    ${cmd}    leave_lf
+    ${response3}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response3}    200
+    Error Code Should Be Equal    ${response3}    None
+    @{peer_id}    Get Field Value    ${response3}    peer_ids
+    Should Be Equal    @{peer_id}[0]    ${PEER_ID2}
+    ${cmd}    Get Field Value    ${response3}    cmd
+    Should Be Equal    ${cmd}    join_lf
+
+rrpc_too_old
+    [Documentation]    验证RRPC_[stun_ip]中的rrpc命令太旧(60s)时，服务器不会返回该条rrpc命令
+    [Tags]    stun-hub
+    [Setup]    Delete Keys    ${RRPC_LIST}
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_ONLINE}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${MOCK_STUN_IP}
+    Hub Join Lf    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}    ${FILE_ID}    ${FILE_URL}    ${PEER_ID_ONLINE}
+    sleep    60
+    ${response}    Hub Lf Rrpc    ${HTTP}    ${STUN_HUB_HOST}    ${STUN_HUB_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_body}    get_response_data    ${response}
+    Should Be Equal    ${response_body}    {}

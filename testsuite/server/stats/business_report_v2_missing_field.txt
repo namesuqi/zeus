@@ -1,0 +1,602 @@
+*** Settings ***
+Documentation     business report v2 缺字段的状况
+...
+...               注 : distributes部分暂时还没有检验
+Force Tags
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ts_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/interface/cp/stats_server.py
+Variables         ../../../lib/interface/cp/stats_constant.py
+
+*** Test Cases ***
+business_report_v2_ok
+    [Documentation]    场景 : 不缺字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_flows_timestamp
+    [Documentation]    场景 : downloads字段的flows字段中缺少timestamp字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${0}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_downloads_flows_duration
+    [Documentation]    场景 : downloads字段的flows字段中缺少duration字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${1}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_downloads_flows_app
+    [Documentation]    场景 : downloads字段的flows字段中缺少app字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${2}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_downloads_flows_cdn
+    [Documentation]    场景 : downloads字段的flows字段中缺少cdn字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${3}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_downloads_flows_p2p
+    [Documentation]    场景 : downloads字段的flows字段中缺少p2p字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${4}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_downloads_flows_all
+    [Documentation]    场景 : downloads字段的flows字段为[{}]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${0}
+    ...    ${1}    ${2}    ${3}    ${4}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+downloads_flows_empty
+    [Documentation]    场景 : downloads字段的flows字段为[]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${5}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_flows
+    [Documentation]    场景 : downloads字段中缺少flows字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${11}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_url
+    [Documentation]    场景 : downloads字段中缺少url字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${6}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_vvid
+    [Documentation]    场景 : downloads字段中缺少vvid字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${7}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_type
+    [Documentation]    场景 : downloads字段中缺少type字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${8}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_firstplaytime
+    [Documentation]    场景 : downloads字段中缺少firstplaytime字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${9}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_bufferingcount
+    [Documentation]    场景 : downloads字段中缺少bufferingcount字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${10}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_downloads_all
+    [Documentation]    场景 : downloads字段为[{}]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${6}
+    ...    ${7}    ${8}    ${9}    ${10}    ${11}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+downloads_empty
+    [Documentation]    场景 : downloads字段为[]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${12}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+downloads_null
+    [Documentation]    场景 : downloads字段为None的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}    ${13}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_UNKNOWN
+
+missing_uploads_flows_timestamp
+    [Documentation]    场景 : uploads字段的flows字段中缺少timestamp字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${0}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_uploads_flows_duration
+    [Documentation]    场景 : uploads字段的flows字段中缺少duration字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${1}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_uploads_flows_bytes
+    [Documentation]    场景 : uploads字段的flows字段中缺少bytes字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${2}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_uploads_flows_all
+    [Documentation]    场景 : uploads字段的flows字段为[{}]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${0}    ${1}
+    ...    ${2}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+uploads_flows_empty
+    [Documentation]    场景 : uploads字段的flows字段为[]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${3}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+uploads_empty
+    [Documentation]    场景 : uploads字段为{}的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${4}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+uploads_null
+    [Documentation]    场景 : uploads字段为None的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}    ${5}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_UNKNOWN
+
+missing_distributes_flows_timestamp
+    [Documentation]    场景 : distributes字段的flows字段中缺少timestamp字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${0}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_flows_duration
+    [Documentation]    场景 : distributes字段的flows字段中缺少duration字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${1}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_flows_bytes
+    [Documentation]    场景 : distributes字段的flows字段中缺少bytes字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${2}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_flows_all
+    [Documentation]    场景 : distributes字段的flows字段为[{}]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${0}    ${1}    ${2}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+distributes_flows_empty
+    [Documentation]    场景 : distributes字段的flows字段为[]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${3}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_flows
+    [Documentation]    场景 : distributes字段缺少flows字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${6}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_url
+    [Documentation]    场景 : distributes字段缺少url字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${4}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_type
+    [Documentation]    场景 : distributes字段缺少type字段的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${5}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_distributes_all
+    [Documentation]    场景 : distributes字段为[{}]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${4}    ${5}    ${6}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+distributes_empty
+    [Documentation]    场景 : distributes字段为[]的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${7}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+distributes_null
+    [Documentation]    场景 : distributes字段为None的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ...    ${8}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_report_id
+    [Documentation]    场景 : id字段缺失的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}    ${0}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_report_peer_id
+    [Documentation]    场景 : peer_id字段缺失的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}    ${1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_report_duration
+    [Documentation]    场景 : duration字段缺失的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}    ${2}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+missing_report_downloads
+    [Documentation]    场景 : downloads字段缺失的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}    ${3}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_report_uploads
+    [Documentation]    场景 : uploads字段缺失的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}    ${4}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_JSON_MISSING_KEY
+
+missing_report_distributes
+    [Documentation]    场景 : distributes字段缺失的情况
+    [Tags]    stats
+    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID}    ${VERSION}    ${NAT_TYPE}
+    ...    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${downloads}    Business Report V2 Downloads    ${URL_DOWNLOADS}    ${VVID}    ${TYPE_LIVE}    ${FIRSTPLAYTIME}    ${BUFFERINGCOUNT}
+    ...    ${TIMESTAMP_DOWNLOADS}    ${DURATION_DOWNLOADS}    ${BYTES_APP}    ${BYTES_CDN}    ${BYTES_P2P}
+    ${uploads}    Business Report V2 Uploads    ${TIMESTAMP_UPLOADS}    ${DURATION_UPLOADS}    ${BYTES_UPLOADS}
+    ${distributes}    Business Report V2 Distributes    ${URL_DISTRIBUTES}    ${TYPE_LIVE}    ${TIMESTAMP_DISTRIBUTES}    ${DURATION_DISTRIBUTES}    ${BYTES_DISTRIBUTES}
+    ${response}    Business Report V2    ${HTTP}    ${STATS_HOST}    ${STATS_PORT}    ${MSG_ID}    ${PEER_ID}
+    ...    ${DURATION}    ${downloads}    ${uploads}    ${distributes}    ${5}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

@@ -1,0 +1,118 @@
+*** Settings ***
+Library           ../../../lib/special/ue/peer_controller.py
+Library           Collections
+Variables         ../../../lib/special/ue/const.py
+
+
+*** Test Cases ***
+ue_test_20ms_0.1
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    20
+    ${loss_rate}    Set Variable    0.1
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_20ms_1.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    20
+    ${loss_rate}    Set Variable    1.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_20ms_7.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    20
+    ${loss_rate}    Set Variable    7.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_20ms_15
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    20
+    ${loss_rate}    Set Variable    15
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_50ms_0.1
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    50
+    ${loss_rate}    Set Variable    0.1
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_50ms_1.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    50
+    ${loss_rate}    Set Variable    1.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_50ms_7.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    50
+    ${loss_rate}    Set Variable    7.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_50ms_15
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    50
+    ${loss_rate}    Set Variable    15
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_100ms_0.1
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    100
+    ${loss_rate}    Set Variable    0.1
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_100ms_1.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    100
+    ${loss_rate}    Set Variable    1.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_100ms_7.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    100
+    ${loss_rate}    Set Variable    7.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_100ms_15
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    100
+    ${loss_rate}    Set Variable    15
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_200ms_0.1
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    200
+    ${loss_rate}    Set Variable    0.1
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_200ms_1.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    200
+    ${loss_rate}    Set Variable    1.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_200ms_7.5
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    200
+    ${loss_rate}    Set Variable    7.5
+    Get Ue Result    ${delay}    ${loss_rate}
+
+ue_test_200ms_15
+    [Documentation]
+    [Tags]    ue_test
+    ${delay}    Convert to Integer    200
+    ${loss_rate}    Set Variable    15
+    Get Ue Result    ${delay}    ${loss_rate}

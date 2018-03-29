@@ -1,0 +1,194 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysqldb.py
+
+*** Test Cases ***
+create_ok
+    [Documentation]    目标：验证能够成功生成一条文件记录，且返回值file_id与输入值相同
+    ...    参数 \ 必选字段：username，url，size，md5，sourceType，source_url；可选字段：file_id，source_ext，public默认值"yes"，if_generate_dir默认值"true"
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${NEW_FILE_ID}
+    Should Be Equal    ${file_id}    @{FileInfo}[0]
+    Comment    IsPublic
+    Should Be Equal    @{FileInfo}[2]    1
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+invalid_file_url
+    [Documentation]    目标：验证URL前缀非法,比如该前缀不属于这个用户时，返回E_INVALID_URL_PREFIX
+    [Tags]    dir    regression    api
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${INVALID_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_URL_PREFIX
+    ${FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    Should Be Empty    ${FileInfo}
+
+url_registered
+    [Documentation]    目标：验证url已被注册时，返回E_URL_ALREADY_EXISTS
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}    yes
+    ...    false
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_URL_ALREADY_EXISTS
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+invalid_file_md5
+    [Documentation]    目标：验证MD5值无效时，返回E_PARAM_FORMAT_INCORRECT
+    [Tags]    dir    regression    api
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    INVALIDMD5    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_FORMAT_INCORRECT
+
+is_not_public
+    [Documentation]    目标：验证生成一条新文件记录时，可控制不公开文件，即"public": "no"
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    no    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    Comment    IsNotPublic
+    Should Be Equal    @{FileInfo}[2]    0
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+no_required_param
+    [Documentation]    目标：验证必选参数缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${EMPTY}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+generate_dir_is_false
+    [Documentation]    目标：验证生成一条新文件记录时，当“if_generate_dir”为false，不生成目录
+    ...
+    ...    说明：该用例所用URL为cdn.cloutropy.com/leigang_cdn/new/testcreatenewfile.flv，其中cdn.cloutropy.com/leigang_cdn为prefix，如果能控制生成目录，应能生成目录/new；如果控制不生成目录，则不生成目录
+    [Tags]    dir    regression    api
+    [Setup]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE1_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${NEW_FILE_ID}
+    ${exists}    DbIsFolderExists    ${ID_LEIGANG}    /new
+    Should not Be True    ${exists}
+    [Teardown]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new
+
+no_source_ext
+    [Documentation]    目标：验证不输入可选参数source_ext时，能够成功生成一条文件记录
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    \    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{FileInfo}[0]
+    Comment    IsPublic
+    Should Be Equal    @{FileInfo}[2]    1
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+no_file_id
+    [Documentation]    验证不输入可选参数fileid时能够成功创建一条文件记录，并生成一个fileid
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    \    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    false
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{FileInfo}[0]
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+oss_generate_dir_ok
+    [Documentation]    目标：验证生成一条新文件（source_type=OSS）记录时，可控制在根目录下生成新目录，即“if_generate_dir”：true
+    ...
+    ...    说明：该用例所用URL为cdn.cloutropy.com/leigang_cdn/new/testcreatenewfile.flv，其中cdn.cloutropy.com/leigang_cdn为prefix，控制生成目录，应能生成目录/new
+    [Tags]    dir    regression    api
+    [Setup]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE1_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_OSS}
+    ...    yes    true
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${NEW_FILE_ID}
+    ${exists}    DbIsFolderExists    ${ID_LEIGANG}    /new
+    Should Be True    ${exists}
+    [Teardown]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new
+
+m3u8_generate_dir_fail
+    [Documentation]    目标：验证生成一条新文件（source_type=M3U8）记录时，可控制在根目录下不能生成新目录，即“if_generate_dir”：true
+    ...
+    ...    说明：该用例所用URL为cdn.cloutropy.com/leigang_cdn/new/testcreatenewfile.flv，其中cdn.cloutropy.com/leigang_cdn为prefix，控制生成目录，应能生成目录/new
+    [Tags]    dir    regression    api
+    [Setup]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_M3U8_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_M3U8_URL}    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_M3U8}
+    ...    yes    true
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${NEW_FILE_ID}
+    ${exists}    DbIsFolderExists    ${ID_LEIGANG}    /new
+    Should Not Be True    ${exists}
+    [Teardown]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /news
+
+cdn_generate_dir_fail
+    [Documentation]    目标：验证生成一条新文件（source_type=CDN）记录时，CDN源不能在根目录下生成新目录，即“if_generate_dir”：true
+    ...
+    ...    说明：该用例所用URL为cdn.cloutropy.com/leigang_cdn/new/testcreatenewfile.flv，其中cdn.cloutropy.com/leigang_cdn为prefix，控制生成目录，应能生成目录/new
+    [Tags]    dir    regression    api
+    [Setup]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new
+    ${response}    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE1_URL}
+    ...    ${NEW_FILE_SIZE}    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_CDN}
+    ...    yes    true
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    ${NEW_FILE_ID}
+    ${exists}    DbIsFolderExists    ${ID_LEIGANG}    /new
+    Should Not Be True    ${exists}
+    [Teardown]    Run Keywords    Db Delete File By Md5    ${NEW_FILE_MD5}
+    ...    AND    Db Delete Folder    ${ID_LEIGANG}    /new

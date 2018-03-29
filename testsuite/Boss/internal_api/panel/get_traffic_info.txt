@@ -1,0 +1,831 @@
+*** Settings ***
+Documentation     Boss对内接口-服务API
+...
+...               获取客户流量信息
+Library           ../../../../lib/response/parse_response.py
+Library           ../../../../lib/response/verify_response.py
+Variables         ../../../../lib/constant/request.py
+Library           ../../../../lib/interface/boss/internal_api.py
+Library           ../../../../lib/interface/boss/api_data.py
+Library           ../../../../lib/interface/boss/extra_function.py
+Variables         ../../../../lib/interface/boss/api_constant.py
+
+*** Test Cases ***
+minute_one_datum_ok
+    [Documentation]    验证 : step为"minute", 且请求时间范围内包含一条历史记录时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    \    Should Be Equal    ${data}    ${data_check}
+
+minute_many_data_ok
+    [Documentation]    验证 : step为"minute", 且请求时间范围内包含288条历史记录时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_MINUTE_LONG}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_MINUTE_LONG}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    \    Should Be Equal    ${data}    ${data_check}
+
+minute_now_ok
+    [Documentation]    验证 : step为"minute", 且请求时间段为当前时间时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_MINUTE_NOW}    ${END_MINUTE_NOW}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_MINUTE_NOW}    ${END_MINUTE_NOW}    ${STEP_MINUTE}
+    \    Should Be Equal    ${data}    ${data_check}
+
+minute_future_ok
+    [Documentation]    验证 : step为"minute", 且请求时间段为未来时间时, 返回200和空信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_FUTURE}    ${END_MINUTE_FUTURE}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+minute_cover_ok
+    [Documentation]    验证 : step为"minute", 请求参数start&end覆盖过去时间, 现在时间, 未来时间时, 返回200和当前系统时间之前的多条信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_FUTURE}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Get Traffic Info Data    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_NOW}    ${STEP_MINUTE}
+    Should Be Equal    ${data}    ${data_check}
+
+minute_start_end_equal_ok
+    [Documentation]    验证 : step为"minute", 请求参数start=end时, 返回200和空信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${START_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+minute_start_end_boundary_1_ok
+    [Documentation]    验证 : step为"minute", 请求参数start&end为边界值时(start+1, end-1), 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST + 1}    ${END_MINUTE_PAST - 1}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+minute_start_end_boundary_2_ok
+    [Documentation]    验证 : step为"minute", 请求参数start&end为边界值时(start-1, end+1), 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_MINUTE_PAST - 1}    ${END_MINUTE_PAST + 1}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_MINUTE_PAST}    ${END_MINUTE_NOW}    ${STEP_MINUTE}
+    \    Should Be Equal    ${data}    ${data_check}
+
+hour_one_datum_ok
+    [Documentation]    验证 : step为"hour", 且请求时间范围内包含一条历史记录时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_HOUR_PAST}    ${END_HOUR_PAST}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_HOUR_PAST}    ${END_HOUR_PAST}    ${STEP_HOUR}
+    \    Should Be Equal    ${data}    ${data_check}
+
+hour_many_data_ok
+    [Documentation]    验证 : step为"hour", 且请求时间范围内包含288条历史记录时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_HOUR_LONG}    ${END_HOUR_PAST}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_HOUR_LONG}    ${END_HOUR_PAST}    ${STEP_HOUR}
+    \    Should Be Equal    ${data}    ${data_check}
+
+hour_now_ok
+    [Documentation]    验证 : step为"hour", 且请求时间段为当前时间时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_HOUR_NOW}    ${END_HOUR_NOW}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_HOUR_NOW}    ${END_HOUR_NOW}    ${STEP_HOUR}
+    \    Should Be Equal    ${data}    ${data_check}
+
+hour_future_ok
+    [Documentation]    验证 : step为"hour", 且请求时间段为未来时间时, 返回200和空信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_HOUR_FUTURE}    ${END_HOUR_FUTURE}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+hour_cover_ok
+    [Documentation]    验证 : step为"hour", 请求参数start&end覆盖过去时间, 现在时间, 未来时间时, 返回200和当前系统时间之前的多条信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_HOUR_PAST}    ${END_HOUR_FUTURE}    ${STEP_HOUR}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Get Traffic Info Data    ${CUSTOMER_ID_1}    ${START_HOUR_PAST}    ${END_HOUR_NOW}    ${STEP_HOUR}
+    Should Be Equal    ${data}    ${data_check}
+
+hour_start_end_equal_ok
+    [Documentation]    验证 : step为"hour", 请求参数start=end时, 返回200和空信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_HOUR_PAST}    ${START_HOUR_PAST}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+hour_start_end_boundary_1_ok
+    [Documentation]    验证 : step为"hour", 请求参数start&end为边界值时(start+1, end-1), 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_HOUR_PAST + 1}    ${END_HOUR_PAST - 1}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+hour_start_end_boundary_2_ok
+    [Documentation]    验证 : step为"hour", 请求参数start&end为边界值时(start-1, end+1), 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_HOUR_PAST - 1}    ${END_HOUR_PAST + 1}
+    \    ...    ${STEP_HOUR}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_HOUR_PAST}    ${END_HOUR_NOW}    ${STEP_HOUR}
+    \    Should Be Equal    ${data}    ${data_check}
+
+day_one_datum_ok
+    [Documentation]    验证 : step为"day", 且请求时间范围内包含一条历史记录时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_DAY_PAST}    ${END_DAY_PAST}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_DAY_PAST}    ${END_DAY_PAST}    ${STEP_DAY}
+    \    Should Be Equal    ${data}    ${data_check}
+
+day_many_data_ok
+    [Documentation]    验证 : step为"day", 且请求时间范围内包含288条历史记录时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_DAY_LONG}    ${END_DAY_PAST}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_DAY_LONG}    ${END_DAY_PAST}    ${STEP_DAY}
+    \    Should Be Equal    ${data}    ${data_check}
+
+day_now_ok
+    [Documentation]    验证 : step为"day", 且请求时间段为当前时间时, 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_DAY_NOW}    ${END_DAY_NOW}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_DAY_NOW}    ${END_DAY_NOW}    ${STEP_DAY}
+    \    Should Be Equal    ${data}    ${data_check}
+
+day_future_ok
+    [Documentation]    验证 : step为"day", 且请求时间段为未来时间时, 返回200和空信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_DAY_FUTURE}    ${END_DAY_FUTURE}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+day_cover_ok
+    [Documentation]    验证 : step为"day", 请求参数start&end覆盖过去时间, 现在时间, 未来时间时, 返回200和当前系统时间之前的多条信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_DAY_PAST}    ${END_DAY_FUTURE}    ${STEP_DAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    ${data_check}    Get Traffic Info Data    ${CUSTOMER_ID_1}    ${START_DAY_PAST}    ${END_DAY_NOW}    ${STEP_DAY}
+    Should Be Equal    ${data}    ${data_check}
+
+day_start_end_equal_ok
+    [Documentation]    验证 : step为"day", 请求参数start=end时, 返回200和空信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_DAY_PAST}    ${START_DAY_PAST}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+day_start_end_boundary_1_ok
+    [Documentation]    验证 : step为"day", 请求参数start&end为边界值时(start+1, end-1), 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_DAY_PAST + 1}    ${END_DAY_PAST - 1}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    &{data}    Get Field Value    ${response}    data
+    \    Should Be Empty    &{data}[download]
+    \    Should Be Empty    &{data}[upload]
+
+day_start_end_boundary_2_ok
+    [Documentation]    验证 : step为"day", 请求参数start&end为边界值时(start-1, end+1), 返回200和对应的data信息
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id}    IN    @{CUSTOMER_ID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id}    ${START_DAY_PAST - 1}    ${END_DAY_PAST + 1}
+    \    ...    ${STEP_DAY}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    ${data_check}    Get Traffic Info Data    ${customer_id}    ${START_DAY_PAST}    ${END_DAY_NOW}    ${STEP_DAY}
+    \    Should Be Equal    ${data}    ${data_check}
+
+access_key_external
+    [Documentation]    验证 : 请求参数api_access_key为外部接口的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_empty
+    [Documentation]    验证 : 请求参数api_access_key为""时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_none
+    [Documentation]    验证 : 请求参数api_access_key为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${None}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_missing
+    [Documentation]    验证 : 请求参数api_access_key字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${EMPTY}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${0}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+access_key_invalid
+    [Documentation]    验证 : 请求参数api_access_key不存在, 或包含非法字符时, 能正常响应, 返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_ACCESS_KEY_ERROR}
+
+access_key_type_number
+    [Documentation]    验证 : 请求参数api_access_key为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${access_key_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${access_key_invalid}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+timestamp_none
+    [Documentation]    验证 : 请求参数timestamp为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${None}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_missing
+    [Documentation]    验证 : 请求参数timestamp字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+timestamp_invalid
+    [Documentation]    验证 : 请求参数timestamp不为非负整数时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${timestamp_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${timestamp_invalid}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_access_key_external
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_access_key为外部接口的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_secret_key_external
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_secret_key为外部接口的key值时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_timestamp_not_match
+    [Documentation]    验证 : 请求参数sign在加密前使用的timestamp与请求参数timestamp不一致时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${NUMBER}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_key_external
+    [Documentation]    验证 : 请求参数sign在加密前使用的api_access_key和api_secret_key都为外部接口的key值时, 会返回200和错误信息, 且不会返回请求获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_EXTERNAL_1}    ${SECRET_KEY_EXTERNAL_1}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_none
+    [Documentation]    验证 : 请求参数sign为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${None}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_missing
+    [Documentation]    验证 : 请求参数sign字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+sign_length_not_match
+    [Documentation]    验证 : 请求参数sign不为三十二位时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_LENGTH_INCORRECT_LIST}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+sign_invalid
+    [Documentation]    验证 : 请求参数sign为三十二位字符串, 但包含非法字符时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    : FOR    ${sign_invalid}    IN    @{SIGN_INVALID_LIST}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_SIGN_ERROR}
+
+sign_type_number
+    [Documentation]    验证 : 请求参数sign为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${sign_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign_invalid}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+customer_id_empty
+    [Documentation]    验证 : 请求参数customer_id为空("")时, 会返回200和错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${EMPTY}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_CUSTOMER_NOT_EXIST}
+
+customer_id_not_exist
+    [Documentation]    验证 : 请求参数customer_id在CRM中不存在时, 会返回200和错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_NOT_EXIST}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_CUSTOMER_NOT_EXIST}
+
+customer_id_none
+    [Documentation]    验证 : 请求参数customer_id为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${None}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+customer_id_missing
+    [Documentation]    验证 : 请求参数customer_id字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+customer_id_type_number
+    [Documentation]    验证 : 请求参数customer_id为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${customer_id_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${customer_id_invalid}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+start_none
+    [Documentation]    验证 : 请求参数start为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${None}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+start_missing
+    [Documentation]    验证 : 请求参数start字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${4}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+start_invalid
+    [Documentation]    验证 : 请求参数start不为非负整数时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${start_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${start_invalid}    ${END_MINUTE_PAST}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+end_none
+    [Documentation]    验证 : 请求参数end为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${None}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+end_missing
+    [Documentation]    验证 : 请求参数end字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${5}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+end_invalid
+    [Documentation]    验证 : 请求参数end不为非负整数时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${end_invalid}    IN    @{COMMON_INVALID_LIST}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${end_invalid}
+    \    ...    ${STEP_MINUTE}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+
+start_larger_than_end
+    [Documentation]    验证 : 请求参数start大于请求参数end时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${MILLISECOND_NOW}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_PARAMETER_ERROR}
+
+minute_too_many_data
+    [Documentation]    验证 : 请求参数step为"minute", 且一次请求超过288个block的数据时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_TOO_LONG}    ${END_MINUTE_PAST}    ${STEP_MINUTE}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_INTERVAL_TOO_LONG}
+
+hour_too_many_data
+    [Documentation]    验证 : 请求参数step为"hour", 且一次请求超过288个block的数据时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_HOUR_TOO_LONG}    ${END_HOUR_PAST}    ${STEP_HOUR}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_INTERVAL_TOO_LONG}
+
+day_too_many_data
+    [Documentation]    验证 : 请求参数step为"day", 且一次请求超过288个block的数据时, 会返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_DAY_TOO_LONG}    ${END_DAY_PAST}    ${STEP_DAY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${success}    Get Field Value    ${response}    success
+    Should Not Be True    ${success}
+    ${data}    Get Field Value    ${response}    data
+    Should Be Equal As Strings    ${data}    ${None}
+    ${code}    Get Field Value    ${response}    code
+    Should Be Equal As Strings    ${code}    ${CODE_INTERVAL_TOO_LONG}
+
+step_none
+    [Documentation]    验证 : 请求参数step为None时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${None}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+step_missing
+    [Documentation]    验证 : 请求参数step字段缺失时, 会返回400
+    [Tags]    boss_internal_api
+    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    ...    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}    ${STEP_MINUTE}    ${6}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+step_invalid
+    [Documentation]    验证 : 请求参数step不为"minute", "hour"或"day"时, 返回200及错误信息, 且不会返回请求需要获取的信息
+    [Tags]    boss_internal_api
+    : FOR    ${step_invalid}    IN    @{COMMON_INVALID_LIST_S}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${step_invalid}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${success}    Get Field Value    ${response}    success
+    \    Should Not Be True    ${success}
+    \    ${data}    Get Field Value    ${response}    data
+    \    Should Be Equal As Strings    ${data}    ${None}
+    \    ${code}    Get Field Value    ${response}    code
+    \    Should Be Equal As Strings    ${code}    ${CODE_STEP_ERROR}
+
+step_type_number
+    [Documentation]    验证 : 请求参数step为数字类型时, 会返回400
+    [Tags]    boss_internal_api
+    : FOR    ${step_invalid}    IN    @{COMMON_INVALID_LIST_N}
+    \    ${sign}    Make Api Param Sign    ${ACCESS_KEY_INTERNAL}    ${SECRET_KEY_INTERNAL}    ${TIMESTAMP_NOW}
+    \    ${response}    Get Traffic Info    ${HTTP}    ${BOSS_CRM_HOST}    ${BOSS_CRM_PORT}    ${ACCESS_KEY_INTERNAL}
+    \    ...    ${TIMESTAMP_NOW}    ${sign}    ${CUSTOMER_ID_1}    ${START_MINUTE_PAST}    ${END_MINUTE_PAST}
+    \    ...    ${step_invalid}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None

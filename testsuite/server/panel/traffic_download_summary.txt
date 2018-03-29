@@ -1,0 +1,30 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           lib.interface.up.panel_server
+Library           lib.database.mysql_handler
+
+*** Test Cases ***
+download_OK
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Traffic Download Summary    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+download_not_login
+    [Tags]    panel
+    ${response}    Panel Traffic Download Summary    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_LOGIN
+
+*** Keywords ***
+Save Login Cookie
+    [Tags]    panel
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    Save Cookies    ${res}    panel_login_cookie

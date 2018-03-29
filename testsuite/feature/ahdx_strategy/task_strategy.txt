@@ -1,0 +1,68 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Variables         ../../../lib/feature/ahdx_strategy/file_data.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/feature/ahdx_strategy/CreatePeerData.py
+Library           ../../../lib/feature/ahdx_strategy/RangePeerInfo.py
+Library           ../../../lib/feature/ahdx_strategy/MockReport.py
+
+*** Test Cases ***
+one_file_play
+    [Documentation]    验证实时计算task策略：
+    ...    当onlineSeeds＜seedMin时，加推task；
+    ...    当s/p ＜4同时onlineSeeds≥seedMin时，加推task；
+    ...    当4≤ s/p ≤6同时onlineSeeds≥seedMin时，保持现状；
+    ...    当s/p ＞6同时onlineSeeds = seedMin时，保持现状；
+    ...    当s/p ＞6同时onlineSeeds＞seedMin时，删除task
+    [Tags]    ahdx
+    ${login}    NewPeerLogin    150
+    ${heartbeat1}    OnlinePeerNum    150
+    sleep    10
+    #启动一个peer播放文件(peer=1)
+    ${fod1}    FodFile    0    1    1
+    sleep    200
+    #维持1个peer播放文件(peer=1)
+    ${heartbeat2}    OnlinePeerNum    150
+    ${distibute1}    SeedDistribute    0    1    0    60
+    ${fod2}    FodFile    0    1    1
+    sleep    200
+    #增加24个peer播放文件(peer=25)
+    ${heartbeat3}    OnlinePeerNum    150
+    ${distributedel1}    SeedDistributeDel    0    1    0    60
+    ${distibute2}    SeedDistribute    0    1    0    50
+    ${fod3}    FodFile    0    1    25
+    sleep    200
+    #维持25个peer播放文件(peer=25)
+    ${heartbeat4}    OnlinePeerNum    150
+    ${distributedel2}    SeedDistributeDel    0    1    0    50
+    ${distibute3}    SeedDistribute    0    1    0    140
+    ${fod4}    FodFile    0    1    25
+    sleep    200
+    #减少10个peer播放文件(peer=15)
+    ${heartbeat5}    OnlinePeerNum    150
+    ${distibute4}    SeedDistribute    0    1    0    140
+    ${fod5}    FodFile    0    1    15
+    sleep    200
+    #维持15个peer播放文件(peer=15)
+    ${heartbeat6}    OnlinePeerNum    150
+    ${distributedel3}    SeedDistributeDel    0    1    0    140
+    ${distibute5}    SeedDistribute    0    1    0    75
+    ${fod6}    FodFile    0    1    15
+    sleep    200
+    #减少10个peer播放文件(peer=5)
+    ${heartbeat7}    OnlinePeerNum    150
+    ${distibute6}    SeedDistribute    0    1    0    75
+    ${fod7}    FodFile    0    1    5
+    sleep    200
+    #维持5个播放(peer=5)
+    ${heartbeat8}    OnlinePeerNum    150
+    ${distributedel4}    SeedDistributeDel    0    1    0    75
+    ${distibute7}    SeedDistribute    0    1    0    50
+    ${fod8}    FodFile    0    1    5
+    sleep    200
+    ${distributedel5}    SeedDistributeDel    0    1    0    50

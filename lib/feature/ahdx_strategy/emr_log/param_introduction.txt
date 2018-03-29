@@ -1,0 +1,40 @@
+﻿需要安装node后运行，middlewares中为依赖文件
+运行方式：node 文件名.js 参数1 参数2 ...
+*****************
+所有序号均从0开始
+*****************
+login.js			peer注册
+	起始peer		结束peer
+
+heartbeat.js		心跳汇报
+	起始peer		结束peer
+
+fod.js				文件fod汇报
+	播放起始文件	播放结束文件	播放peer数量
+
+distribute.js		LF汇报
+	起始文件		结束文件		起始seed		结束seed
+
+distributedel.js	LF删除
+	起始文件		结束文件		起始seed		结束seed
+
+download_flow.js	文件p2p汇报
+	文件序号		起始seed		结束seed		p2p流量			cdn流量
+
+mockData1_10.js		预取列表存在，磁盘文件不存在
+	预取起始文件	预取结束文件
+
+mockData2_01.js		预取列表不存在，磁盘文件存在
+	磁盘起始文件	磁盘结束文件	磁盘空间（文件进入前）
+
+mockData3_00.js		预取列表不存在，磁盘文件不存在
+	不存在起始文件	不存在结束文件	磁盘空间（文件out前）
+
+mockData4_11.js		预取列表存在，磁盘文件存在
+	磁盘起始文件	磁盘结束文件	磁盘空间（文件进入前）
+
+mockData5_0-1.js	预取列表不存在，磁盘文件空洞
+	空洞起始文件	空洞结束文件	磁盘空间（文件进入后）
+
+mockData6_1-1.js	预取列表存在，磁盘文件空洞
+	磁盘起始文件	磁盘结束文件	空洞起始文件	空洞结束文件	磁盘空间（文件进入前）

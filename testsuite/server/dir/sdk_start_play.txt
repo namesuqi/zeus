@@ -1,0 +1,213 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+start_ts_server_ok
+    [Documentation]    目标：验证sdk启播已注册的文件（ts格式）时，能请求到该文件的信息
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${PEER_ID1}
+    ...    ${ICNTV_TS_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${ICNTV_TS_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url}    @{file_info}[4]
+    ${cppc}    Get Field Value    ${response}    cppc
+    Should Be Equal As Numbers    ${cppc}    12
+
+start_flv_ok
+    [Documentation]    目标：验证sdk启播已注册的文件（flv格式）时，能请求到该文件的信息
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${CIWEN_FLV_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${CIWEN_FLV_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    ${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    ${url}    @{file_info}[4]
+    ${cppc}    Get Field Value    ${response}    cppc
+    Should Be Equal As Numbers    ${cppc}    12
+
+start_m3u8
+    [Documentation]    目标：验证客户端起播已注册m3u8文件时，走该接口，将返回500
+    [Tags]    abandon
+    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}    ${CIWEN_M3U8_URL}
+    sleep    3    # time for server finding
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${CIWEN_M3U8_URL}
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    None
+
+no_user_name
+    [Documentation]    目标：验证参数（username）缺失时，返回400
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    \    ${PEER_ID1}
+    ...    ${ICNTV_TS_URL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+no_peer_id
+    [Documentation]    目标：验证参数（peerid)缺失时，返回400
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${EMPTY}
+    ...    ${ICNTV_TS_URL}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+no_url
+    [Documentation]    目标：验证参数（url）缺失时，返回400
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${PEER_ID1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+invalid_m3u8_url
+    [Documentation]    目标：验证启播文件url（m3u8格式）不存在时，返回E_NOT_FOUND
+    [Tags]    abandon
+    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}    ${INVALID_M3U8_URL}
+    sleep    3    # time for server finding
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${INVALID_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_FOUND
+
+invalid_ts_url
+    [Documentation]    目标：验证启播文件url（ts格式）不存在时，返回E_NOT_FOUND
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${PEER_ID1}
+    ...    ${INVALID_TS_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_FOUND
+
+invalid_flv_url
+    [Documentation]    目标：验证启播文件url（flv格式）不存在时，返回E_NOT_FOUND
+    [Tags]    abandon
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${INVALID_FLV_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_FOUND
+
+register_flv_ok
+    [Documentation]    目标：验证启播未注册的flv格式文件时，能自动注册
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_FLV_URL}
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${UNREGISTERED_FLV_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${UNREGISTERED_FLV_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    http://${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    http://${url}    @{file_info}[4]
+    ${cppc}    Get Field Value    ${response}    cppc
+    Should Be Equal As Numbers    ${cppc}    12
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_FLV_URL}
+
+register_m3u8_ok
+    [Documentation]    目标：验证支持启播未注册文件（m3u8格式），走该接口能自动注册
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_M3U8_URL}
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CIWEN}    ${PEER_ID1}
+    ...    ${UNREGISTERED_M3U8_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${UNREGISTERED_M3U8_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    http://${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    http://${url}    @{file_info}[4]
+    ${cppc}    Get Field Value    ${response}    cppc
+    Should Be Equal As Numbers    ${cppc}    12
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_M3U8_URL}
+
+register_ts_server_ok
+    [Documentation]    目标：验证启播未注册的ts格式文件时，能自动注册
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_TS_URL}
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_CNTV}    ${PEER_ID1}
+    ...    ${UNREGISTERED_TS_URL}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    @{file_info}    Db Get Info By Source Url    ${UNREGISTERED_TS_URL}
+    ${file_id}    Get Field Value    ${response}    file_id
+    Should Be Equal    ${file_id}    @{file_info}[0]
+    ${fsize}    Get Field Value    ${response}    fsize
+    Should Be Equal    ${fsize}    @{file_info}[1]
+    ${psize}    Get Field Value    ${response}    psize
+    Should Be Equal    ${psize}    @{file_info}[5]
+    ${ppc}    Get Field Value    ${response}    ppc
+    Should Be Equal    ${ppc}    @{file_info}[6]
+    ${token_url}    Get Field Value    ${response}    token_url
+    Should Be Equal    http://${token_url}    @{file_info}[4]
+    ${type}    Get Response Data By Path    ${response}    /src/type
+    Should Be Equal    ${type}    @{file_info}[3]
+    ${url}    Get Response Data By Path    ${response}    /src/url
+    Should Be Equal    http://${url}    @{file_info}[4]
+    ${cppc}    Get Field Value    ${response}    cppc
+    Should Be Equal As Numbers    ${cppc}    12
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_TS_URL}}
+
+register_with_wrong_user
+    [Documentation]    目标：验证自动注册时，会校验该url的prefix是否为该user对应的prefix
+    [Tags]    abandon
+    [Setup]    Db Delete File By Url    ${UNREGISTERED_TS_URL}
+    ${response}    Dir Sdk Start Play    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_THUNDER}    ${PEER_ID1}
+    ...    ${UNREGISTERED_TS_URL}
+    Status Code Should Be Equal    ${response}    500
+    Error Code Should Be Equal    ${response}    None
+    [Teardown]    Db Delete File By Url    ${UNREGISTERED_TS_URL}

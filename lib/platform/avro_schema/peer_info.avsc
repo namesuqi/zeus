@@ -1,0 +1,22 @@
+{
+    "type":"record",
+    "name":"peer_info",
+    "fields":[
+        {"name":"peer_id","type":"string"},
+        {"name":"os_type","type":["null","string"],"default":null},
+        {"name":"sdk_version","type":"string"},
+        {"name":"nat_type","type":"int"},
+        {"name":"public_ip","type":"string"},
+        {"name":"public_port","type":"int"},
+        {"name":"private_ip","type":"string"},
+        {"name":"private_port","type":"int"},
+        {"name":"macs","type":"string"},
+        {"name":"os_version","type":["null","string"],"default":null},
+        {"name":"cpu","type":["null","string"],"default":null},
+        {"name":"country","type":["null","string"],"default":null},
+        {"name":"province_id","type":["null","string"],"default":null},
+        {"name":"city_id","type":["null","string"],"default":null},
+        {"name":"isp_id","type":["null","string"],"default":null},
+        {"name":"timestamp","type":"long"}
+    ]
+}

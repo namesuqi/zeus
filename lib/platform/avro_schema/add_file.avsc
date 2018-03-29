@@ -1,0 +1,13 @@
+{
+    "type":"record",
+    "name":"add_file",
+    "fields":[
+        {"name":"url","type":"string"},
+        {"name":"file_id","type":"string"},
+        {"name":"fsize","type":"long"},
+        {"name":"psize","type":"long"},
+        {"name":"ppc","type":"long"},
+        {"name":"username","type":"string"},
+        {"name":"timestamp","type":"long"}
+    ]
+}

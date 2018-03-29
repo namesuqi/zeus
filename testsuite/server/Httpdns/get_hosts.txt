@@ -1,0 +1,212 @@
+*** Settings ***
+Force Tags
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/httpdns_constant.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/cp/httpdns_server.py
+Library           ../../../lib/database/etcd_handler.py
+
+*** Test Cases ***
+get_hosts_group_missing
+    [Documentation]    验证请求指定域名组信息时, URL中必选参数groupname缺失, httpdns-srv可返回400
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    ${response}    Httpdns Get Hosts    ${HTTP}    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${empty}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_data}    Get Response Data By Path    ${response}
+    Should Be Empty    ${response_data}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+get_hosts_ip_invalid
+    [Documentation]    验证获取指定域名组时，url中参数ip非法，httpdns-srv可返回400
+    ...    ip_invalid_list: ["INVALID_IP", -1, 0, "256.256.256.256"]
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    : FOR    ${IP_INVALID_I}    IN    @{INVALID_IP_LIST}
+    \    ${response}    Httpdns Get Hosts    ${HTTP}    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${GROUP}
+    \    ...    ${IP_INVALID_I}    ${True}    ${False}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${response_data}    Get Response Data By Path    ${response}
+    \    Should Be Empty    ${response_data}
+    \    ${response}    Httpdns Get Hosts    ${HTTP}    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${GROUP}
+    \    ...    ${IP_INVALID_I}    ${False}    ${True}
+    \    Status Code Should Be Equal    ${response}    400
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${response_data}    Get Response Data By Path    ${response}
+    \    Should Be Empty    ${response_data}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+get_host_group_not_exist
+    [Documentation]    前提: etcd中无该key
+    ...
+    ...    验证请求指定域名组时, 若参数对应的域名组信息不存在, httpdns-srv可返回200, 返回体对应字段信息为空(返回200和[])
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    : FOR    ${HOST_NOT_EXIST_I}    IN    @{HOST_NOT_EXIST_LIST}
+    \    ${response}    Httpdns Get Hosts    ${HTTP}    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${HOST_NOT_EXIST_I}
+    \    Status Code Should Be Equal    ${response}    200
+    \    Error Code Should Be Equal    ${response}    None
+    \    ${response_body}    get_response_data    ${response}
+    \    Should Be Equal As Strings    ${response_body}    []
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+check_hosts_response
+    [Documentation]    验证httpdns-srv可根据请求源IP判断分区返回对应域名组域名信息
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    ${r1}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${DEFAULT_PROVINCE}    ${GROUP_CLOUTROPY}    ${GROUP_DOMAINS_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r1}
+    ${r2}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${NORTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    1.1    4    1000
+    Should be true    ${r2}
+    ${r3}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${SOUTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    2.2    6    2000
+    Should be true    ${r3}
+    ${r4}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${GUANGXI_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    3.3    2    3000
+    Should be true    ${r4}
+    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}    ${DEFAULT_DOMAIN_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r5}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+invalid_ip_map_default
+    [Documentation]    验证etcd中default中域名IP_MAP不合法时，httpdns-srv不会生效该配置，可按之前缓存的数据响应请求
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    : FOR    ${invalid_ip_map}    IN    @{IP_MAP_INVALID_LIST}
+    \    etcd_set_group    ${CONFIG_TEST_DOMAIN_DEFAULT}    ${HTTPDNS_MASTER_PATH}    ${invalid_ip_map}    ${True}
+    \    ${r1}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${NORTH_PROVINCE}    ${GROUP_CLOUTROPY}
+    \    ...    ${PART_DOMAIN_CLOUTROPY}    1.1    4    1000    ${True}
+    \    Should be true    ${r1}
+    \    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}
+    \    ...    ${DEFAULT_DOMAIN_CLOUTROPY}    0.0    5    3600    ${True}
+    \    Should be true    ${r5}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+invalid_ip_map_beijing
+    [Documentation]    验证etcd中beijing分区中域名IP_MAP不合法时，httpdns-srv不会生效该配置，可按之前缓存的数据响应请求
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    : FOR    ${invalid_ip_map}    IN    @{IP_MAP_INVALID_LIST}
+    \    etcd_set_group    ${CONFIG_TEST_DOMAIN_BEIJING}    ${HTTPDNS_MASTER_PATH}    ${invalid_ip_map}    ${True}
+    \    ${r1}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${NORTH_PROVINCE}    ${GROUP_CLOUTROPY}
+    \    ...    ${PART_DOMAIN_CLOUTROPY}    1.1    4    1000    ${True}
+    \    Should be true    ${r1}
+    \    ${r3}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${SOUTH_PROVINCE}    ${GROUP_CLOUTROPY}
+    \    ...    ${PART_DOMAIN_CLOUTROPY}    2.2    6    2000    ${True}
+    \    Should be true    ${r3}
+    \    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}
+    \    ...    ${DEFAULT_DOMAIN_CLOUTROPY}    0.0    5    3600    ${True}
+    \    Should be true    ${r5}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+partition_all_switch_to_default
+    [Documentation]    验证将所有分区切换至default配置时，httpdns-srv可立即生效该配置
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    ${r1}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${DEFAULT_PROVINCE}    ${GROUP_CLOUTROPY}    ${GROUP_DOMAINS_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r1}
+    ${r2}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${NORTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    1.1    4    1000
+    Should be true    ${r2}
+    ${r3}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${SOUTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    2.2    6    2000
+    Should be true    ${r3}
+    ${r4}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${GUANGXI_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    3.3    2    3000
+    Should be true    ${r4}
+    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}    ${DEFAULT_DOMAIN_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r5}
+    etcd_set_group    ${CONFIG_PARTITION_ALL_SWITCH_TO_DEFAULT}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}    ${GROUP_DOMAINS_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r5}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+
+partition_south_switch_to_beijing
+    [Documentation]    验证将south分区切换至beijing配置时，httpdns-srv可立即生效该配置
+    [Tags]    httpdns
+    [Setup]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    ${r1}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${DEFAULT_PROVINCE}    ${GROUP_CLOUTROPY}    ${GROUP_DOMAINS_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r1}
+    ${r2}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${NORTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    1.1    4    1000
+    Should be true    ${r2}
+    ${r3}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${SOUTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    2.2    6    2000
+    Should be true    ${r3}
+    ${r4}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${GUANGXI_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    3.3    2    3000
+    Should be true    ${r4}
+    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}    ${DEFAULT_DOMAIN_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r5}
+    etcd_set_group    ${CONFIG_PARTITION_SOUTH_SWITCH_TO_BEIJING}    ${HTTPDNS_MASTER_PATH}
+    sleep    1
+    ${r1}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${DEFAULT_PROVINCE}    ${GROUP_CLOUTROPY}    ${GROUP_DOMAINS_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r1}
+    ${r2}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${NORTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    1.1    4    1000
+    Should be true    ${r2}
+    ${r3}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${SOUTH_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    1.1    4    1000
+    Should be true    ${r3}
+    ${r4}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${GUANGXI_PROVINCE}    ${GROUP_CLOUTROPY}    ${PART_DOMAIN_CLOUTROPY}
+    ...    3.3    2    3000
+    Should be true    ${r4}
+    ${r5}    Check Httpdns Group Res    ${HTTPDNS_HOST}    ${HTTPDNS_PORT}    ${PROVINCE_LIST}    ${GROUP_CLOUTROPY}    ${DEFAULT_DOMAIN_CLOUTROPY}
+    ...    0.0    5    3600
+    Should be true    ${r5}
+    del_etcd_key    ${HTTPDNS_MASTER_PATH}
+    etcd_set_group    ${CONF_TEST_V1}    ${HTTPDNS_MASTER_PATH}
+    [Teardown]    # Run Keywords | del_etcd_key | ${HTTPDNS_MASTER_PATH} | AND | etcd_set_group | ${CONF_TEST_V1} | ${HTTPDNS_MASTER_PATH}

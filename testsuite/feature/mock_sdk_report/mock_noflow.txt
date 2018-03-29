@@ -1,0 +1,102 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/feature/mock_sdk_report/send_sdk_requests.py
+Variables         ../../../lib/feature/mock_sdk_report/file_data.py
+
+*** Test Cases ***
+mock1_1
+    [Documentation]    expection: no task
+    ...    pass
+    [Tags]    mock_test    mock1
+    [Setup]
+    seeds_login    0    150
+    seeds_distribute    0    50    no    ${VOD_FILE1_ID}
+    [Teardown]
+
+mock1_2
+    [Documentation]    expection: delete task = 50; pass
+    [Tags]    mock_test    mock1
+    [Setup]
+    seeds_login    0    150
+    seeds_distribute    0    150    no    ${VOD_FILE2_ID}
+    [Teardown]
+
+mock2
+    [Documentation]    expection: download task = 40*1.2=48;pass
+    [Tags]    mock_test    mock_2
+    seeds_login    0    120
+    peers_login    0    20
+    seeds_distribute    0    60    no    ${VOD_FILE1_ID}
+    peers_fod    0    20    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+    [Teardown]    # seeds_distribute | 0 | 60 | "del" | ${VOD_FILE1_ID}
+
+mock3
+    [Documentation]    expection: download task = 25*1.2=30;pass
+    [Tags]    mock_test    mock_3
+    seeds_login    0    100
+    peers_login    0    15
+    seeds_distribute    0    75    no    ${VOD_FILE4_ID}
+    peers_fod    0    15    ${VOD_FILE4_ID}    ${VOD_FILE4_URL}    ${VOD_FILE4_SIZE}
+
+mock4
+    [Documentation]    expection:download task = 20*1.2=24;pass
+    [Tags]    mock_test    mock_4
+    seeds_login    0    120
+    peers_login    0    10
+    seeds_distribute    0    80    no    ${VOD_FILE1_ID}
+    peers_fod    0    10    ${VOD_FILE1_ID}    ${VOD_FILE1_URL}    ${VOD_FILE1_SIZE}
+
+mock5
+    [Documentation]    expection: download task = 80*1.2 = 96;push-srv预取上报太慢，导致task重复下发
+    [Tags]    mock_test    mock_5
+    seeds_login    0    240
+    seeds_distribute    0    120    no    ${VOD_FILE2_ID}
+    peers_login    0    40
+    peers_fod    0    40    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+
+mock6
+    [Documentation]    expection: no task; pass
+    [Tags]    mock_test    mock_6
+    seeds_login    0    150
+    peers_login    0    30
+    seeds_distribute    0    120    no    ${VOD_FILE3_ID}
+    peers_fod    0    30    ${VOD_FILE3_ID}    ${VOD_FILE3_URL}    ${VOD_FILE3_SIZE}
+    sleep    60
+    seeds_distribute    120    150    no    ${VOD_FILE3_ID}
+
+mock7
+    [Documentation]    expection: delete task = 50
+    [Tags]    mock_test    mock_7
+    seeds_login    0    200
+    peers_login    0    30
+    seeds_distribute    0    100    no    ${VOD_FILE2_ID}
+    peers_fod    0    30    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}
+    seeds_distribute    100    200    no    ${VOD_FILE2_ID}
+
+seeddelete
+    [Documentation]    for test : delete seed
+    [Tags]    mock_test    mock_delete
+    seeds_login    0    420
+    seeds_distribute    0    420    del    ${VOD_FILE1_ID}
+    seeds_distribute    0    420    del    ${VOD_FILE2_ID}
+    seeds_distribute    0    420    del    ${VOD_FILE3_ID}
+    seeds_distribute    0    420    del    ${VOD_FILE4_ID}
+
+gettask
+    [Tags]    mock_test    mock_gettask
+    Comment    seeds_login    0    200
+    Comment    ${response}    SeedsGetTask    0    10
+    ${r1}    SeedsGetTask    0    300    ${VOD_FILE1_ID}
+
+mock0
+    [Documentation]    just test
+    [Tags]    mock_test    mock0
+    Comment    peers_login    0    20
+    seeds_login    0    200
+    seeds_distribute    0    100    del    ${VOD_FILE2_ID}
+    peers_login    0    20
+    peers_fod    0    20    ${VOD_FILE2_ID}    ${VOD_FILE2_URL}    ${VOD_FILE2_SIZE}

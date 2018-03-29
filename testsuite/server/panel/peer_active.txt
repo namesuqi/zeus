@@ -1,0 +1,98 @@
+*** Settings ***
+Default Tags
+Test Timeout      60 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           lib.interface.up.panel_server
+Library           lib.database.mysql_handler
+
+*** Test Cases ***
+peer_active_ok
+    [Documentation]    step 只能为 day
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475133320000
+    ...    day    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+peer_active_not_login
+    [Tags]    panel
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    day
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NOT_LOGIN
+
+peer_active_none_peer_prefix
+    [Tags]    panel
+    [Setup]    create account
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    day    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_NONE_PEER_PREFIX
+    [Teardown]    delete account
+
+peer_active_miss_start
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${EMPTY}    1475054120000
+    ...    day    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+peer_active_miss_end
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    ${EMPTY}
+    ...    day    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+peer_active_miss_step
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    ${EMPTY}    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+peer_active_invalid_start
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    INVALID_TIMESTAMP    1475054120000
+    ...    day    ${true}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+peer_active_invalid_end
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    INVALID_TIMESTAMP
+    ...    day    ${true}
+    Status Code Should Be Equal    ${response}    404
+    Error Code Should Be Equal    ${response}    None
+
+peer_active_invalid_step
+    [Tags]    panel
+    [Setup]    Save Login Cookie
+    ${response}    Panel Peer Active    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    1475046920000    1475054120000
+    ...    INVALID_STEP    ${true}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_INVALID_PARAMETERS
+
+*** Keywords ***
+Save Login Cookie
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    ${USER_WASU}    ${PASSWD_WASU}
+    Save Cookies    ${res}    panel_login_cookie
+
+create account
+    ${username}    Evaluate    str('tester')
+    db_add_user_no_prefix    ${username}    123456
+    ${res}    Panel Auth Login    ${HTTP}    ${PANEL_HOST}    ${PANEL_PORT}    tester    123456
+    Save Cookies    ${res}    panel_login_cookie
+
+delete account
+    db_delete_user_no_prefix    tester

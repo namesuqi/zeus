@@ -1,0 +1,114 @@
+*** Settings ***
+Force Tags
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Variables         ../../../lib/constant/database.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/p2p_ops.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/etcd_handler.py
+
+*** Test Cases ***
+get_group_ok
+    [Documentation]    验证可以成功获取指定域名组信息
+    [Tags]    ops
+    Upsert Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}    ${HOSTNAME}
+    sleep    0.1
+    ${response}    Get Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${GROUPNAME}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_group}    Get Response Data By Path    ${response}
+    &{value_list}    Read Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_GROUP}    ${GROUPNAME}
+    ${etcd_group}    Get Value By Keys    ${value_list}    ${key}
+    Should Be Equal    ${response_group}    ${etcd_group}
+
+get_group_empty
+    [Documentation]    验证必选参数groupname缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${response}    Get Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_data}    Get Response Data By Path    ${response}
+    Should Be Empty    ${response_data}
+
+get_group_not_exist
+    [Documentation]    验证groupname对应的信息不存在时，ops可返回200和E_KEY_NOT_FOUND
+    [Tags]    ops
+    ${response}    Get Httpdns Group    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${INVALID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_KEY_NOT_FOUND
+
+get_groups_ok
+    [Documentation]    验证可以成功获取所有域名组信息
+    [Tags]    ops
+    ${response}    Get Httpdns Groups    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_GROUP}
+    @{response_data}    Get Response Data By Path    ${response}
+    ${res_num}    Get Length    ${response_data}
+    ${etcd_num}    Get Length    ${value_list}
+    Should Be Equal    ${res_num}    ${etcd_num}
+    : FOR    ${i}    IN    @{response_data}
+    \    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_GROUP}    &{i}[group_name]
+    \    ${etcd_domains}    Get Value By Keys    ${value_list}    ${key}
+    \    Should Be Equal    &{i}[domains]    ${etcd_domains}
+
+get_host_ok
+    [Documentation]    验证可以成功获取指定域名信息
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}    ${DIVISION_DD}
+    ...    ${DIVISION_PD}    ${DIVISION_DI}    ${DIVISION_PI}
+    sleep    0.1
+    ${response}    Get Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${response_ttl}    Get Response Data By Path    ${response}    /ttl
+    ${response_host}    Get Response Data By Path    ${response}    /name
+    ${response_division}    Get Response Data By Path    ${response}    /divisions
+    @{divisions}    Create List    ${DIVISION_DD}    ${DIVISION_PD}    ${DIVISION_DI}    ${DIVISION_PI}
+    Should Be Equal    ${response_ttl}    ${TTL}
+    Should Be Equal    ${response_host}    ${HOSTNAME}
+    Should Be Equal    ${response_division}    ${divisions}
+    [Teardown]    Del Etcd Key    ${GROUPNAME}    ${DOMAIN_NAME_GROUP}
+
+get_host_empty
+    [Documentation]    验证必选参数hostname缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${response}    Get Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${response_data}    Get Response Data By Path    ${response}
+    Should Be Empty    ${response_data}
+
+get_host_not_exist
+    [Documentation]    验证参数hostname对应的信息不存在时，ops可返回200和E_KEY_NOT_FOUND
+    [Tags]    ops
+    ${response}    Get Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${INVALID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_KEY_NOT_FOUND
+
+get_hosts_ok
+    [Documentation]    验证可以获取所有域名信息
+    ...    比较了ips的长度，divisions中的ip值未去比较
+    [Tags]    ops
+    ${response}    Get Httpdns Hosts    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    @{response_data}    Get Response Data By Path    ${response}
+    ${res_num}    Get Length    ${response_data}
+    ${etcd_num}    Get Length    ${value_list}
+    Should Be Equal    ${res_num}    ${etcd_num}
+    : FOR    ${i}    IN    @{response_data}
+    \    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_IP_MAP}    &{i}[name]
+    \    ${etcd_ttl}    Get Value By Keys    ${value_list}    ${key}    ttl
+    \    Should Be Equal    ${etcd_ttl}    &{i}[ttl]
+    \    ${etcd_ips}    Get Value By Keys    ${value_list}    ${key}    ips
+    \    ${res_divisions}    Get Length    &{i}[divisions]
+    \    ${etcd_ips}    Get Length    ${etcd_ips}
+    \    Should Be Equal    ${res_divisions}    ${etcd_ips}

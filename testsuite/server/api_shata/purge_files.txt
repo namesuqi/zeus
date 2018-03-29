@@ -1,0 +1,88 @@
+*** Settings ***
+Default Tags
+Library           ../../../lib/business/Api_Shata.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/response/VerifyResponse.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/api_shata.py
+
+*** Test Cases ***
+PurgeOK
+    [Documentation]    目标：验证在鉴权正确时能够成功删除已存在的files
+    ${response}    ApiPurgeFiles    ${HTTP}    ${API_HOST}    ${API_PORT}    ${URL_FILES}    ${ACCESS}
+    ...    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    0
+    ShouldBeEqual    ${code}    ${expect_code}
+    ShouldBeEqual    ${message}    ok
+
+NoUrl
+    [Documentation]    目标：验证缺少必要参数url时返回code=0,message=ok
+    ...
+    ...    当数据库中该用户名下不存在需要purge的url时，返回ok
+    ${response}    ApiPurgeFiles    ${HTTP}    ${API_HOST}    ${API_PORT}    \    ${ACCESS}
+    ...    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    -1
+    ShouldBeEqual    ${code}    ${expect_code}
+    ShouldBeEqual    ${message}    param is illegal.
+
+InvalidUrl
+    [Documentation]    目标：验证输入无效url时返回code=0,message=ok
+    ...
+    ...    当数据库中该用户名下不存在需要purge的url时，返回ok
+    ${response}    ApiPurgeFiles    ${HTTP}    ${API_HOST}    ${API_PORT}    ${INVALID_URL_FILE}    ${ACCESS}
+    ...    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    0
+    ShouldBeEqual    ${code}    ${expect_code}
+    Should Contain    ${message}    not found files
+
+FolderUrl
+    [Documentation]    目标：验证输入folder的url时返回code=0,message=ok，但实际上并不删除
+    ...
+    ...    当数据库中该用户名下不存在需要purge的url时，返回ok
+    ${response}    ApiPurgeFiles    ${HTTP}    ${API_HOST}    ${API_PORT}    ${URL_FOLDER}    ${ACCESS}
+    ...    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    0
+    ShouldBeEqual    ${code}    ${expect_code}
+    Should Contain    ${message}    not found files
+
+InformalUrl
+    [Documentation]    目标：验证输入格式不正确的url时返回code=0,message=ok
+    ...
+    ...    当数据库中该用户名下不存在需要purge的url时，返回ok
+    ${response}    ApiPurgeFiles    ${HTTP}    ${API_HOST}    ${API_PORT}    ${INFORMAL_URL_FILE}    ${ACCESS}
+    ...    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    0
+    ShouldBeEqual    ${code}    ${expect_code}
+    Should Contain    ${message}    not found files
+
+WrongToken
+    [Documentation]    目标：验证输入错误的鉴权时返回code=-1,message=not authorized.
+    ${response}    ApiPurgeFiles    ${HTTP}    ${API_HOST}    ${API_PORT}    ${URL_FILES}    ${WRONG_ACCESS}
+    ...    ${SECRET}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${code}    GetFieldValue    ${response}    code
+    ${message}    GetFieldValue    ${response}    message
+    ${expect_code}    Convert To Integer    -1
+    ShouldBeEqual    ${code}    ${expect_code}
+    ShouldBeEqual    ${message}    not authorized.

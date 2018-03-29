@@ -1,0 +1,31 @@
+*** Settings ***
+Library           ../../../lib/business/Live.py
+
+*** Test Cases ***
+LeifengSeedStart
+    [Documentation]
+    [Tags]    start_leifeng
+    InitSdkNumForLeifeng
+    StopSdkForLeifeng
+    StartSdkForLeifeng
+
+LeifengSeedRestart
+    [Documentation]
+    [Tags]    restart_leifeng
+    InitSdkNumForLeifeng
+    StopSdkForLeifeng
+    StartSdkForLeifeng
+
+LeifengSeedStop
+    [Documentation]
+    [Tags]    stop_leifeng
+    InitSdkNumForLeifeng
+    StopSdkForLeifeng
+
+LeifengSeedStopSome
+    [Documentation]
+    [Tags]    stop_some_leifeng
+    InitKillSdkNumForLeifeng
+    StopSomeSdkForLeifeng
+
+

@@ -1,0 +1,2 @@
+*** Settings ***
+Documentation     Panel对接接口

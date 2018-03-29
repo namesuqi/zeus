@@ -1,0 +1,73 @@
+*** Settings ***
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/live.py
+Library           ../../../lib/business/Live.py
+
+*** Test Cases ***
+StartPeer
+    [Documentation]
+    [Tags]    start_peer
+    InitSdkNumForPeer
+    StopLiveForPeer
+    StopSdkForPeer
+    StartSdkForPeer
+    StartLiveForPeer    ${LIVE_CHANNEL_4}
+
+StopPeer
+    [Documentation]
+    [Tags]    stop_peer
+    InitSdkNumForPeer
+    StopLiveForPeer
+    StopSdkForPeer
+
+RestartPeer
+    [Documentation]
+    [Tags]    restart_peer
+    InitSdkNumForPeer
+    StopLiveForPeer
+    StopSdkForPeer
+    StartSdkForPeer
+    StartLiveForPeer    ${LIVE_CHANNEL_4}
+
+
+StartSeedAndPeer
+    [Documentation]
+    [Tags]    start_live
+    InitSdkNumForSeed    4
+    InitSdkNumForPeer    4
+    StopLiveForPeer
+    StopSdkForSeed
+    StopSdkForPeer
+    StartSdkForPeer
+    StartLiveForPeer    ${LIVE_CHANNEL_4}
+
+LiveTestStop
+    [Documentation]
+    [Tags]    stop_live
+    InitSdkNumForSeed    4
+    InitSdkNumForPeer    4
+    StopLiveForPeer
+    StopSdkForSeed
+    StopSdkForPeer
+
+StartSeed
+    [Documentation]
+    [Tags]    start_seed
+    InitSdkNumForSeed    4
+    InitSdkNumForPeer    4
+    StopLiveForPeer
+    StopSdkForSeed
+    StopSdkForPeer
+    StartSdkForSeed
+
+StopSeed
+    [Documentation]
+    [Tags]    stop_seed
+    InitSdkNumForSeed    4
+    StopSdkForSeed
+
+
+
+
+
+

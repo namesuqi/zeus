@@ -1,0 +1,370 @@
+*** Settings ***
+Force Tags
+Default Tags
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/interface/cp/ops_constant.py
+Variables         ../../../lib/constant/database.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/p2p_ops.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/etcd_handler.py
+
+*** Test Cases ***
+upsert_host_ok
+    [Documentation]    验证可以成功添加指定域名信息
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_PD}    ${DIVISION_DI}    ${DIVISION_PI}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_IP_MAP}    ${HOSTNAME}
+    ${etcd_ttl}    Get Value By Keys    ${value_list}    ${key}    ttl
+    Should Be Equal    ${etcd_ttl}    ${TTL}
+    ${etcd_ips_dd}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_DD}[division]
+    Should Be Equal    ${etcd_ips_dd}    &{DIVISION_DD}[ips]
+    ${etcd_ips_pd}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_PD}[division]
+    Should Be Equal    ${etcd_ips_pd}    &{DIVISION_PD}[ips]
+    ${etcd_ips_di}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_DI}[division]
+    Should Be Equal    ${etcd_ips_di}    &{DIVISION_DI}[ips]
+    ${etcd_ips_pi}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_PI}[division]
+    Should Be Equal    ${etcd_ips_pi}    &{DIVISION_PI}[ips]
+    [Teardown]    Del Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+
+upsert_update_host_ok
+    [Documentation]    验证可以成功更新指定已有域名的信息
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}    ${DIVISION_DD}
+    ...    ${DIVISION_PD}    ${DIVISION_DI}    ${DIVISION_PI}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL_300}
+    ...    ${DIVISION_DD}    ${DIVISION_PD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_IP_MAP}    ${HOSTNAME}
+    ${etcd_ttl}    Get Value By Keys    ${value_list}    ${key}    ttl
+    Should Be Equal    ${etcd_ttl}    ${TTL_300}
+    ${etcd_ips_dd}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_DD}[division]
+    Should Be Equal    ${etcd_ips_dd}    &{DIVISION_DD}[ips]
+    ${etcd_ips_pd}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_PD}[division]
+    Should Be Equal    ${etcd_ips_pd}    &{DIVISION_PD}[ips]
+    ${etcd_ips_di}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_DI}[division]
+    Should Be Equal    ${etcd_ips_di}    ${None}
+    ${etcd_ips_pi}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_PI}[division]
+    Should Be Equal    ${etcd_ips_pi}    ${None}
+    [Teardown]    Del Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+
+upsert_host_empty
+    [Documentation]    验证必选参数hostname缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${EMPTY}    ${TTL}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ok_too_long
+    [Documentation]    验证可以成功添加指定域名信息（针对长度过长的域名）
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${HOSTNAME_LONG}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME_LONG}    ${TTL}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${HOSTNAME_LONG}    ${DOMAIN_NAME_IP_MAP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_IP_MAP}    ${HOSTNAME_LONG}
+    ${etcd_ttl}    Get Value By Keys    ${value_list}    ${key}    ttl
+    Should Be Equal    ${etcd_ttl}    ${TTL}
+    ${etcd_ips_dd}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_DD}[division]
+    Should Be Equal    ${etcd_ips_dd}    &{DIVISION_DD}[ips]
+    [Teardown]    Del Etcd Key    ${HOSTNAME_LONG}    ${DOMAIN_NAME_IP_MAP}
+
+upsert_host_ttl_empty
+    [Documentation]    验证ttl参数缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${EMPTY}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ttl_0
+    [Documentation]    验证请求体中ttl参数非法（非正整数）时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${0}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ttl_invalid_1
+    [Documentation]    验证请求体中ttl参数非法（非正整数）时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${INVALID}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ttl_invalid_2
+    [Documentation]    验证请求体中ttl参数非法（非正整数）时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${DECIMAL}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ttl_invalid_3
+    [Documentation]    验证请求体中ttl参数非法（非正整数）时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${NEGATIVE}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ttl_invalid_4
+    [Documentation]    验证请求体中ttl参数非法（非正整数）时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${STRING_NUMBER}
+    ...    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_divisions_empty
+    [Documentation]    验证divisions参数缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_divisions_no_default
+    [Documentation]    验证divisions中缺失default_default信息时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_PD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_empty
+    [Documentation]    验证divisions中的某个division为空字符串时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${EMPTY}    ${DIVISION_PD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_same_1
+    [Documentation]    验证divisions中的division有重复时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_DD}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_same_2
+    [Documentation]    验证divisions中的division有重复时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_PI}    ${DIVISION_PI}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_invalid_province
+    [Documentation]    验证该province参数无效时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_P_WRONG}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_invalid_isp
+    [Documentation]    验证isp参数无效时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_I_WRONG}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_invalid_province_isp
+    [Documentation]    验证province_isp无效时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_WRONG}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_empty_province
+    [Documentation]    验证province参数缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_P_EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_division_empty_isp
+    [Documentation]    验证isp参数缺失时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_DD}    ${DIVISION_I_EMPTY}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ips_empty_1
+    [Documentation]    验证ips为空数组时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IPS_EMPTY_1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ips_empty_2
+    [Documentation]    验证ips中元素为空字符串时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IPS_EMPTY_2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ip_empty_1
+    [Documentation]    验证ips中有空元素时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_EMPTY_1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ip_empty_2
+    [Documentation]    验证ips中某个元素有空字符串时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_EMPTY_2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ok_ip_same
+    [Documentation]    验证ips中的ip有重复时，ops可返回200和{}，ops在向etcd写入时会对ips中重复的ip去重
+    ...    例：请求体中ips为["192.168.1.200", "192.168.1.200"]，
+    ...    \ \ \ 写入etcd中的ips应为["192.168.1.200"]
+    [Tags]    ops
+    [Setup]    Del Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_SAME}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    &{value_list}    Read Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+    ${key}    Catenate    SEPARATOR=    ${DOMAIN_NAME_IP_MAP}    ${HOSTNAME}
+    ${etcd_ttl}    Get Value By Keys    ${value_list}    ${key}    ttl
+    Should Be Equal    ${etcd_ttl}    ${TTL}
+    @{etcd_ips_dd}    Get Value By Keys    ${value_list}    ${key}    ips    &{DIVISION_IP_SAME}[division]
+    @{division_ips}    Set Variable    &{DIVISION_IP_SAME}[ips]
+    Should Be Equal    @{etcd_ips_dd}[0]    @{division_ips}[0]
+    ${list_length}    Get Length    ${etcd_ips_dd}
+    Should Be Equal As Strings    ${list_length}    1
+    [Teardown]    Del Etcd Key    ${HOSTNAME}    ${DOMAIN_NAME_IP_MAP}
+
+upsert_host_ip_invalid_1
+    [Documentation]    验证ip非法(256.256.256.256)时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_INVALID_1}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ip_invalid_2
+    [Documentation]    验证ip非法(单个字符)时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_INVALID_2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ip_invalid_3
+    [Documentation]    验证ip列表中含0.0.0.0时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_INVALID_3}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}
+
+upsert_host_ip_invalid_4
+    [Documentation]    验证ip列表中含255.255.255时，ops可返回400和{}
+    [Tags]    ops
+    ${init_value}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    ${response}    Upsert Httpdns Host    ${HTTP}    ${P2P_OPS_HOST}    ${P2P_OPS_PORT}    ${HOSTNAME}    ${TTL}
+    ...    ${DIVISION_IP_INVALID_4}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+    ${value_list}    Read Etcd Key    ${EMPTY}    ${DOMAIN_NAME_IP_MAP}
+    Should Be Equal    ${init_value}    ${value_list}

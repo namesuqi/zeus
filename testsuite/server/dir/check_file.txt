@@ -1,0 +1,92 @@
+*** Settings ***
+Force Tags
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+
+*** Test Cases ***
+check_ok
+    [Documentation]    目标：验证能够检测指定用户的指定文件是否存在
+    ...    说明：filepath为必选参数，sourcetype默认值“OSS”
+    [Tags]    dir    regression    api
+    ${response}    Dir Check File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_ICNTV}    ${CNTV_RELATIVE_URL}
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${exists}    Get Field Value    ${response}    exists
+    ${check_exist}    Db Check File Exist    ${ID_ICNTV}    ${CNTV_RELATIVE_URL}    ${SOURCE_TYPE_CDN}
+    Should Be Equal    ${exists}    ${check_exist}
+
+no_file_path
+    [Documentation]    目标：验证查询参数filepath缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Check File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_ICNTV}    ${EMPTY}
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+no_source_type
+    [Documentation]    目标：验证不输入sourcetype时，检测数据源类型为OSS的文件
+    ...
+    ...    说明：sourcetype参数为空时，默认值“OSS”
+    ...
+    ...    验证步骤：新建数据源类型为OSS的文件记录；获取该文件记录的路径；然后在不输入sourcetype的情况检测该文件路径；预期结果：能够检测到，返回True
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_OSS}    yes
+    ...    true
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    ${response}    Dir Check File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${exists}    Get Field Value    ${response}    exists
+    Should Be True    ${exists}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+incorrect_source_type
+    [Documentation]    目标：验证该filepath存在的情况下，输入错误的sourcetype时，无法检测到该文件，即返回false
+    ...
+    ...    验证步骤：新建数据源为OSS的文件记录；检测该filepath，并设置sourcetype为CDN；
+    ...
+    ...    预期结果；不能检测到，返回false
+    [Tags]    dir    regression    api
+    [Setup]    Db Delete File By Md5    ${NEW_FILE_MD5}
+    Dir Create File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_FILE_URL}    ${NEW_FILE_SIZE}
+    ...    ${NEW_FILE_MD5}    ${NEW_FILE_ID}    ${NEW_FILE_SOURCE_URL }    ${NEW_FILE_SOURCE_EXT}    ${SOURCE_TYPE_OSS}    yes
+    ...    true
+    @{FileInfo}    Db Get Info By Md5    ${NEW_FILE_MD5}
+    #filepath    @{FileInfo}[3]
+    ${response}    Dir Check File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    @{FileInfo}[3]
+    ...    CDN
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${exists}    Get Field Value    ${response}    exists
+    Should Not Be True    ${exists}
+    [Teardown]    Db Delete File By Md5    ${NEW_FILE_MD5}
+
+illegal_user_id
+    [Documentation]    目标：验证userid不合法时，返回E_PARAM_FORMAT_INCORRECT
+    [Tags]    dir    regression    api
+    ${response}    Dir Check File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    +1    ${CNTV_RELATIVE_URL}
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_FORMAT_INCORRECT
+
+incorrect_user_id
+    [Documentation]    目标：验证userID错误或不存在时，查询文件将显示文件不存在，即返回false
+    [Tags]    dir    regression    api
+    ${response}    Dir Check File    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    0    ${CNTV_RELATIVE_URL}
+    ...    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${exists}    Get Field Value    ${response}    exists
+    Should Not Be True    ${exists}

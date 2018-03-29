@@ -1,0 +1,11 @@
+{
+    "type":"record",
+    "name":"push_disk_cache",
+    "fields":[
+        {"name":"universe","type":"boolean"},
+        {"name":"file_id","type":"string"},
+        {"name":"behavior","type":"string"},
+        {"name":"lsm_free","type":["null","long"],"default":null},
+        {"name":"timestamp","type":"long"}
+    ]
+}

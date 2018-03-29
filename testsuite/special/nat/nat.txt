@@ -1,0 +1,68 @@
+*** Settings ***
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/host.py
+Library           ../../../lib/database/RedisHandler.py
+Library           ../../../lib/data/json_parser.py
+Library           ../../../lib/business/SdkDashBoard.py
+Library           Remote    http://${NAT1_IP}:${REMOTE_PORT}    WITH NAME    RemoteNAT1
+Library           Remote    http://${NAT2_IP}:${REMOTE_PORT}    WITH NAME    RemoteNAT2
+Library           Remote    http://${SDK1_IP}:${REMOTE_PORT}    WITH NAME    RemoteSDK1
+Library           Remote    http://${SDK2_IP}:${REMOTE_PORT}    WITH NAME    RemoteSDK2
+
+*** Test Cases ***
+type0_0
+    [Documentation]    依赖条件：peer上有已经缓存的视频文件
+    [Tags]    nat
+    Log    更新sdk1的路由表，让sdk1请求都经过nat1
+    Log    更新sdk2的路由表，让sdk2请求都经过nat2
+
+    Log    断开sdk和stun之间的联系
+    Log    切换nat1的状态，断开sdk1和stun之间的联系
+    Log    切换nat2的状态，断开sdk2和stun之间的联系
+    Log    凊redis,mongodb
+    DeleteKeysWithPrefix    PNIC_
+    Log    启动sdk
+    RemoteSDK1.RestartSDK
+    RemoteSDK2.RestartSDK
+    Sleep    1
+    ${sdk1_port}    RemoteSDK1.GetSDKUdpPort
+    ${sdk2_port}    RemoteSDK2.GetSDKUdpPort
+    Log    获得sdk的peerid
+    ${peer1_id}    RemoteSDK1.GetPeerID
+    ${peer2_id}    RemoteSDK2.GetPeerID
+
+
+    Log    切换nat1状态
+    RemoteNAT1.SwitchToNatType    0    ${STUN_IP}    ${NAT1_IP}    ${sdk2_port}
+    Log    切换nat2状态
+    RemoteNAT2.SwitchToNatType    0    ${STUN_IP}    ${NAT2_IP}    ${sdk1_port}
+    Log    等待登录和汇报
+    Sleep    15
+    Log    获得redis里面的nat类型
+    ${peer1_info}    GetPeerInfo    ${peer1_id}
+    ${peer1_nat_type}    GetPeerValue    ${peer1_info}    natType
+    ${peer2_info}    GetPeerInfo    ${peer1_id}
+    ${peer2_nat_type}    GetPeerValue    ${peer1_info}    natType
+    Log    验证nat类型
+    ${expected_peer1_nat_type}    Convert To Integer    0
+    ${expected_peer2_nat_type}    Convert To Integer    0
+    Should Be Equal    ${peer1_nat_type}    ${expected_peer1_nat_type}
+    Should Be Equal    ${peer2_nat_type}    ${expected_peer2_nat_type}
+    Log    SDK1播放文件
+    RemoteSDK1.StartVod    vod.cloutropy.com/700m.avi    ${USER_LEIGANG}
+    Sleep    30
+    Log    检查SDK1的dashboard
+    ${response}    GetSeeds
+    Sleep    120
+    Log    停止vod
+    RemoteSDK1.StopVod
+    Log    获得期望值
+    ${pid}    GetDataByPath    ${response}    /1/addr/pid
+    ${pid}    TrimQuotations    ${pid}
+    ${state}    GetDataByPath    ${response}    /1/state
+    ${state}    TrimQuotations    ${state}
+    Log    验证结果
+    Should Be Equal    ${pid}    ${peer2_id}
+    Should Be Equal    ${state}    CONNECTED
+    Log    恢复网络环境

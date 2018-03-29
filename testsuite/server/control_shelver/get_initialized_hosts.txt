@@ -1,0 +1,81 @@
+*** Settings ***
+Library           ../../../lib/interface/ops/control_shelver.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Variables         ../../../lib/interface/ops/control_constant.py
+Library           ../../../lib/database/mysql_db.py
+Library           ../../../lib/database/mysql_handler.py
+
+*** Test Cases ***
+get_ok
+    [Documentation]    验证：数据库中有主机信息时，向shelver发送获取资产列表的请求，能获取所有上架的主机资产列表
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    AND    Db Delete Ops Host    AND    Db Insert Ops Host
+    ...    ${HOST_ID2}    ${IP1}    ${STATUS_0}    AND    Db Insert Ops Host Info    ${HOST_ID2}
+    ...    ${HOSTNAME_VALUE1}    ${COMMENT_VALUE}    ${LOCATION_VALUE}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE1}
+    ...    ${HOST_OS_VALUE1}
+    ${response}    Get Initialized Hosts    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${host_id}    get_response_data_by_path    ${response}    /data/0/host_id
+    Should Be Equal    ${host_id}    ${HOST_ID2}
+    ${ip}    get_response_data_by_path    ${response}    /data/0/host_ip
+    Should Be Equal    ${ip}     ${IP1}
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID2}    AND    Db Delete Ops Host    ${HOST_ID2}
+
+get_ok_no_host
+    [Documentation]    验证：数据库中无主机信息时，向shelver发送获取资产列表的请求，服务器返回空的资产列表([])
+    ...
+    ...    执行前可将status置1
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    AND    Db Delete Ops Host
+    ${response}    Get Initialized Hosts    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${data_value}    get_field_value    ${response}    data
+    Should Be Equal As Strings    ${data_value}    []
+    [Teardown]
+
+get_host_status_1
+    [Documentation]    验证：status为1时，不会获取到该主机的资产列表信息
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    AND    Db Delete Ops Host    AND    Db Insert Ops Host
+    ...    ${HOST_ID2}    ${IP1}    ${STATUS_1}    AND    Db Insert Ops Host Info    ${HOST_ID2}
+    ...    ${HOSTNAME_VALUE1}    ${COMMENT_VALUE}    ${LOCATION_VALUE}    ${CPU_VALUE}    ${MEM_VALUE}    ${DISK_VALUE1}
+    ...    ${HOST_OS_VALUE1}
+    ${response}    Get Initialized Hosts    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${msg_data}    get_field_value    ${response}    msg
+    Should Be Equal    ${msg_data}    success
+    ${data_value}    get_field_value    ${response}    data
+    Should Be Equal As Strings    ${data_value}    []
+    [Teardown]    Run Keywords    Db Delete Ops Host Info    ${HOST_ID1}    AND    Db Delete Ops Host    ${HOST_ID1}
+
+get_just_ops_host
+    [Documentation]    验证：ops_host表中有该主机信息，ops_host_info无有该主机信息，不会获取到该主机的资产列表信息
+    [Tags]    control shelver
+    [Setup]    Run Keywords    Db Delete Ops Host Info    AND    Db Delete Ops Host    AND    Db Insert Ops Host
+    ...    ${HOST_ID1}    ${IP1}    ${STATUS_0}
+    ${response}    Get Initialized Hosts    ${HTTP}    ${CONTROL_SHELVER_HOST}    ${CONTROL_SHELVER_PORT}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${res_data}    get_response_data    ${response}
+    log    ${res_data}
+    ${res_data2}    get_field_value    ${response}    msg
+    Should Be Equal    ${res_data2}    success
+    ${res_data3}    get_field_value    ${response}    data
+    Should Be Equal As Strings    ${res_data3}    []
+    [Teardown]    Db Delete Ops Host Info    ${HOST_ID1}

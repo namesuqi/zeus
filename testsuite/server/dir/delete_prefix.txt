@@ -1,0 +1,55 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/VerifyResponse.py
+Library           ../../../lib/response/ParseResponse.py
+Library           ../../../lib/business/Dir.py
+Library           ../../../lib/database/MysqlHandler.py
+Library           ../../../lib/database/mysqldb.py
+
+*** Test Cases ***
+DeleteOK
+    [Documentation]    目标：验证能够删除指定用户名下注册的prefix
+    [Tags]
+    [Setup]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+    DirCreatePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${USER_LEIGANG}    ${NEW_CREATE_PREFIX}    ${SOURCE_TYPE_CDN}
+    ${response}    DirDeletePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${NEW_CREATE_PREFIX}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    None
+    ${exists}    DbIsPrefixExists    ${NEW_CREATE_PREFIX}
+    Should Not Be True    ${exists}
+    [Teardown]    DbDeletePrefix    ${NEW_CREATE_PREFIX}
+
+DeleteInvalidPrefix
+    [Documentation]    目标：验证要删除的指定前缀不存在时，返回E_PREFIX_NON_EXISTS
+    [Tags]
+    [Setup]    DbDeletePrefix    notexisit.com
+    ${response}    DirDeletePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    notexisit.com
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_PREFIX_NON_EXISTS
+
+DeleteLastPrefix
+    [Documentation]    目标：验证删除指定用户的最后一个前缀时，返回E_OP_FORBIDDEN
+    ...
+    ...    setup：删除ppc_url_prefix中的指定数据，然后插入一条用户id=999999999的prefix数据，以使该用户的prefix唯一
+    ...    \ \ \ \ \ teardown：删除ppc_url_prefix中的指定数据
+    [Tags]
+    [Setup]    Run Keywords    DbDeletePrefix    forbidden.cloudtropy.com    AND    DbCreatePrefix    forbidden.cloudtropy.com
+    ...    999999999
+    ${response}    DirDeletePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    forbidden.cloudtropy.com
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_OP_FORBIDDEN
+    ${exists}    DbIsPrefixExists    forbidden.cloudtropy.com
+    Should Be True    ${exists}
+    [Teardown]    DbDeletePrefix    forbidden.cloudtropy.com
+
+NoPrefix
+    [Documentation]    目标：验证参数prefix缺失时，返回E_PARAM_MISSING
+    [Tags]
+    ${response}    DirDeletePrefix    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}
+    VerifyStatusCode    ${response}    200
+    VerifyErrorCode    ${response}    E_PARAM_MISSING

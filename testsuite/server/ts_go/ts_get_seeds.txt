@@ -1,0 +1,102 @@
+*** Settings ***
+Default Tags
+Variables         ../../../lib/interface/cp/ts_constant.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/interface/cp/tracker_server.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/database/redis_cluster.py
+
+*** Test Cases ***
+ts_get_seeds_ok
+    [Documentation]    目标：验证peer能够正确获取seed列表
+    ...    设计： peer获取seed列表功能不需验证peer是否登录
+    [Tags]    ts_old    regression
+    [Setup]    Peer Login    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VERSION}
+    ...    ${NAT_TYPE}    ${PUBLIC_IP}    ${PUBLIC_PORT}    ${PRIVATE_IP}    ${PRIVATE_PORT}    ${STUN_IP1}
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_not_login
+    [Documentation]    目标：验证peer未login的情况下，将不能正确获取seed列表（该测试用例目标：未login节点拿不到seed）
+    ...    设计： 播放节点没有login的话, 版本不好估计, 给的seed list会保守
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID3}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_slice_id_zero
+    [Documentation]    目标：验证peer使用值为0的slice_id能够正确获取seed列表
+    ...    设计：slice_id的范围[0,63]
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID_1}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_invalid_peer_id
+    [Documentation]    目标：验证传入非法peer_id请求失败
+    ...    设计：输入peer_id不是32位字符串即非法
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID_INVALID}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_invalid_file_id
+    [Documentation]    目标：验证传入非法file_id请求失败
+    ...    设计： 输入file_id不是32位字符串即非法
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${FILE_ID_INVALID}
+    ...    ${SLICE_ID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_invalid_slice_id_negative
+    [Documentation]    目标：验证传入非法slice_id请求失败
+    ...    设计：输入slice_id -1为非法
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID_INVALID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_invalid_slice_id_out_of_range
+    [Documentation]    目标：验证传入非法slice_id请求失败
+    ...    设计：输入slice_id 64越界 非法
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID_INVALID_2}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_no_peer_id
+    [Documentation]    目标：验证传入缺失peer_id请求失败
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${EMPTY}    ${VOD_FILE_ID}
+    ...    ${SLICE_ID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_no_file_id
+    [Documentation]    目标：验证缺失file_id请求失败
+    ...    设计：file_id是必选参数，缺失请求会失败
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${EMPTY}
+    ...    ${SLICE_ID}
+    Status Code Should Be Equal    ${response}    400
+    Error Code Should Be Equal    ${response}    None
+
+ts_get_seeds_no_slice_id
+    [Documentation]    目标：验证缺失slice_id请求
+    ...    设计：slice_id是可选参数，可以缺失
+    [Tags]    ts_old    regression
+    ${response}    Peer Get Seeds    ${HTTP}    ${TS_HOST}    ${TS_PORT}    ${PEER_ID2}    ${VOD_FILE_ID}
+    ...    ${EMPTY}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None

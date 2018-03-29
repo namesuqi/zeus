@@ -1,0 +1,77 @@
+*** Settings ***
+Default Tags
+Test Timeout      10 seconds
+Variables         ../../../lib/constant/account.py
+Variables         ../../../lib/constant/host.py
+Variables         ../../../lib/constant/request.py
+Variables         ../../../lib/constant/file.py
+Library           ../../../lib/response/verify_response.py
+Library           ../../../lib/response/parse_response.py
+Library           ../../../lib/interface/up/dir_server.py
+Library           ../../../lib/database/mysql_handler.py
+Library           ../../../lib/database/mysql_db.py
+
+*** Test Cases ***
+get_ok
+    [Documentation]    目标：验证不指定sourcetype时，能够获取用户OSS以外的其他源数据列表
+    ...
+    ...    参数必选字段：uid，pageIndex，pageCount，
+    ...    可选字段：sourceType
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    1
+    ...    5
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${totalCount}    Get Field Value    ${response}    totalCount
+    ${filecount}    Db Get File Count By Uid    ${ID_LEIGANG}
+    Should Be Equal    ${totalCount}    ${filecount}
+
+get_ok_by_source_type
+    [Documentation]    目标：验证输入sourceType参数后，能够获取用户该类型数据列表
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    1
+    ...    5    ${SOURCE_TYPE_CDN}
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    None
+    ${totalCount}    Get Field Value    ${response}    totalCount
+    ${filecount}    Db Get File Count By Uid    ${ID_LEIGANG}    ${SOURCE_TYPE_CDN}
+    Should Be Equal    ${totalCount}    ${filecount}
+
+no_user_id
+    [Documentation]    目标：验证参数userid缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    \    1
+    ...    5
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+no_page_index
+    [Documentation]    目标：验证参数pageIndex缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    ${EMPTY}
+    ...    5
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+no_page_count
+    [Documentation]    目标：验证参数pageCount缺失时，返回E_PARAM_MISSING
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    1
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_MISSING
+
+page_index_invalid
+    [Documentation]    目标：验证参数pageIndex不合法时，返回E_PARAM_FORMAT_INCORRECT
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    0
+    ...    5
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_FORMAT_INCORRECT
+
+page_count_invalid
+    [Documentation]    目标：验证参数pageCount不合法时，返回E_PARAM_FORMAT_INCORRECT
+    [Tags]    dir    regression    api
+    ${response}    Dir Get Source Files    ${HTTP}    ${DIR_HOST}    ${DIR_PORT}    ${ID_LEIGANG}    1
+    ...    0
+    Status Code Should Be Equal    ${response}    200
+    Error Code Should Be Equal    ${response}    E_PARAM_FORMAT_INCORRECT
