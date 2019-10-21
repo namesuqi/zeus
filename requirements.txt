@@ -8,7 +8,7 @@ colorama==0.2.5
 demjson==2.2.4
 dnspython==1.15.0
 dpkt==1.8.8
-ecdsa==0.9
+ecdsa==0.13.3
 gevent==1.2a2
 hiredis==0.2.0
 html5lib==0.999
