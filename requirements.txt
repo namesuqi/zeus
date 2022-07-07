@@ -27,7 +27,7 @@ pymongo==3.2.2
 python-etcd==0.4.3
 redis==2.10.5
 redis-py-cluster==1.2.0
-requests==2.2.1
+requests==2.20.0
 robotframework==3.0
 robotframework-httplibrary==0.4.2
 simplejson==3.10.0
